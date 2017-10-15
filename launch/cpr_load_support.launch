@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+<launch>
+
+  <!-- Declaring the variables -->
+
+  <arg name="WRENCH_CONTROL_TOPIC" default="/admittance_control/wrench_control" />
+  <arg name="WRENCH_EXTERNAL_TOPIC" default="/admittance_control/u_e" />
+
+<!-- using the wooden block int the lab -->
+  <arg name="M_object" default="0.666" />
+
+
+
+
+  <!-- Running the node -->
+
+  <param name="wrench_external_topic_name" value="$(arg WRENCH_EXTERNAL_TOPIC)"/>
+  <param name="wrench_control_topic_name" value="$(arg WRENCH_CONTROL_TOPIC)"/>
+  <param name="M_object" value="$(arg M_object)"/>
+
+
+  <node name="load_support_node"
+  	pkg="cpr_load_support" type="cpr_load_support_node" output="screen"/>
+
+
+
+</launch>

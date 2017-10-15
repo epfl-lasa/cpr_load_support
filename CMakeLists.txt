@@ -10,6 +10,12 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
 )
 
+
+# set(CMAKE_CXX_FLAGS "-O2 -O3 -std=c++11 -Wall")
+# set(CMAKE_CXX_FLAGS "-O2 -O3 -std=c++11")
+add_definitions(-std=c++11)
+
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -115,7 +121,10 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  include
+  ${EIGEN3_INCLUDE_DIR}
 )
+
 
 ## Declare a C++ library
 # add_library(cpr_load_support
@@ -128,16 +137,21 @@ include_directories(
 # add_dependencies(cpr_load_support ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-# add_executable(cpr_load_support_node src/cpr_load_support_node.cpp)
+add_executable(cpr_load_support_node 
+	src/cpr_load_support_node.cpp
+	src/LoadSupportController.cpp
+	include/LoadSupportController.h)
+
+
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(cpr_load_support_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(cpr_load_support_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(cpr_load_support_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(cpr_load_support_node
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
