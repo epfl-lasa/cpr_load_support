@@ -18,14 +18,20 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 	ROS_INFO_STREAM("Load-Support-Controoler is created at: " << nh_.getNamespace() << " with freq: " << frequency << "Hz");
 
 	// Subscribers:
-	sub_platform_state_ = nh_.subscribe(wrench_external_topic_name, 5,
-	                                    &LoadSupportController::UpdateExternalForce, this,
-	                                    ros::TransportHints().reliable().tcpNoDelay());
+	sub_external_wrench_ = nh_.subscribe(wrench_external_topic_name, 5,
+	                                     &LoadSupportController::UpdateExternalForce, this,
+	                                     ros::TransportHints().reliable().tcpNoDelay());
+
+	// Publishers:
+	pub_control_wrench_ = nh_.advertise<geometry_msgs::WrenchStamped>(wrench_control_topic_name, 5);
+
+
+
 	loadShare_ = 0;
 	M_estiamted_ = 0;
+	ForceZ_ = 0;
 
 	while (nh_.ok() ) {
-		ROS_WARN_THROTTLE(5, "Running the nod");
 
 		ComputeLoadShare();
 
@@ -51,7 +57,30 @@ void LoadSupportController::UpdateExternalForce(const geometry_msgs::WrenchStamp
 
 void LoadSupportController::ComputeLoadShare() {
 
-	M_estiamted_ = - wrench_external_(2) / gravity_acc;
+
+	double target_force = - wrench_external_(2);
+
+	double Fz_error =   target_force - ForceZ_;
+
+	if (Fz_error > 0) {
+		ForceZ_ += 0.1 * Fz_error;
+	}
+	else {
+		ForceZ_ += 0.2 * Fz_error;
+	}
+
+	if (ForceZ_ < 0) {
+		ForceZ_ = 0;
+	}
+
+	if (ForceZ_ > 2*M_object_*gravity_acc) {
+		ForceZ_ = 2*M_object_*gravity_acc;
+	}
+
+
+
+
+	M_estiamted_ = ForceZ_ / gravity_acc;
 	if (M_estiamted_ < 0) {
 		M_estiamted_ = 0;
 	}
@@ -64,6 +93,28 @@ void LoadSupportController::ComputeLoadShare() {
 	}
 
 	ROS_INFO_STREAM_THROTTLE(1, "load-share " <<  loadShare_);
+
+
+
+
+
+
+
+
+	geometry_msgs::WrenchStamped msg_wrench;
+
+	msg_wrench.header.stamp    = ros::Time::now();
+	msg_wrench.header.frame_id = "ur5_arm_base_link";
+	msg_wrench.wrench.force.x  = 0;
+	msg_wrench.wrench.force.y  = 0;
+	msg_wrench.wrench.force.z  = ForceZ_;
+	msg_wrench.wrench.torque.x = 0;
+	msg_wrench.wrench.torque.y = 0;
+	msg_wrench.wrench.torque.z = 0;
+	pub_control_wrench_.publish(msg_wrench);
+
+
+
 
 
 

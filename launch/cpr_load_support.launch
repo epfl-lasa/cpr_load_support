@@ -6,7 +6,7 @@
   <arg name="WRENCH_CONTROL_TOPIC" default="/admittance_control/wrench_control" />
   <arg name="WRENCH_EXTERNAL_TOPIC" default="/admittance_control/u_e" />
 
-<!-- using the wooden block int the lab -->
+<!-- using the wooden block int the lab! 666, the number of the beast! -->
   <arg name="M_object" default="0.666" />
 
 

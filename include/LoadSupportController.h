@@ -41,7 +41,9 @@ private:
 	ros::Rate loop_rate_;
 	double dt_;
 
-	ros::Subscriber sub_platform_state_;
+	ros::Subscriber sub_external_wrench_;
+
+	ros::Publisher pub_control_wrench_;
 
 
 	std::string wrench_external_topic_name_;
@@ -51,6 +53,8 @@ private:
 	double M_object_;
 	double M_estiamted_;
 	double loadShare_;
+
+	double ForceZ_;
 
 
 	// INPUT SIGNAL
