@@ -14,20 +14,27 @@ int main(int argc, char **argv)
 
 
   // Parameters
-  std::string wrench_external_topic_name;
-  std::string wrench_control_topic_name;
+  std::string topic_wrench_external;
+  std::string topic_wrench_control;
+  std::string topic_desired_equilibrium;;
 
   double M_object;
+  double Z_ceiling;
+  double Z_level;
 
 
-
-  if (!nh.getParam("wrench_external_topic_name", wrench_external_topic_name))   {
+  if (!nh.getParam("topic_wrench_external", topic_wrench_external))   {
     ROS_ERROR("Couldn't retrieve the topic name for the external wrench. ");
     return -1;
   }
 
-  if (!nh.getParam("wrench_control_topic_name", wrench_control_topic_name))   {
+  if (!nh.getParam("topic_wrench_control", topic_wrench_control))   {
     ROS_ERROR("Couldn't retrieve the topic name for the control wrench. ");
+    return -1;
+  }
+
+  if (!nh.getParam("topic_desired_equilibrium", topic_desired_equilibrium))   {
+    ROS_ERROR("Couldn't retrieve the topic name for the desired equilibrium point. ");
     return -1;
   }
 
@@ -36,11 +43,24 @@ int main(int argc, char **argv)
     return -1;
   }
 
+  if (!nh.getParam("Z_ceiling", Z_ceiling))   {
+    ROS_ERROR("Couldn't retrieve mass of the object. ");
+    return -1;
+  }
+
+  if (!nh.getParam("Z_level", Z_level))   {
+    ROS_ERROR("Couldn't retrieve mass of the object. ");
+    return -1;
+  }
+
 
   LoadSupportController load_support_controller(nh, frequency,
       M_object,
-      wrench_external_topic_name,
-      wrench_control_topic_name);
+      Z_ceiling,
+      Z_level,
+      topic_wrench_external,
+      topic_wrench_control,
+      topic_desired_equilibrium);
 
   // load_support_controller.Run();
 

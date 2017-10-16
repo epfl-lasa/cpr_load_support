@@ -6,30 +6,37 @@
 LoadSupportController::LoadSupportController(ros::NodeHandle &n,
         double frequency,
         double M_object,
-        std::string wrench_external_topic_name,
-        std::string wrench_control_topic_name)
+        double Z_ceiling,
+        double Z_level,
+        std::string topic_wrench_external,
+        std::string topic_wrench_control,
+        std::string topic_desired_equilibrium)
 	: nh_(n),
 	  loop_rate_(frequency),
 	  M_object_(M_object),
-	  wrench_external_topic_name_(wrench_external_topic_name),
-	  wrench_control_topic_name_(wrench_control_topic_name),
+	  Z_ceiling_(Z_ceiling),
+	  Z_level_(Z_level),
 	  dt_(1 / frequency) {
 
 	ROS_INFO_STREAM("Load-Support-Controoler is created at: " << nh_.getNamespace() << " with freq: " << frequency << "Hz");
 
 	// Subscribers:
-	sub_external_wrench_ = nh_.subscribe(wrench_external_topic_name, 5,
+	sub_external_wrench_ = nh_.subscribe(topic_wrench_external, 5,
 	                                     &LoadSupportController::UpdateExternalForce, this,
 	                                     ros::TransportHints().reliable().tcpNoDelay());
 
 	// Publishers:
-	pub_control_wrench_ = nh_.advertise<geometry_msgs::WrenchStamped>(wrench_control_topic_name, 5);
+	pub_control_wrench_ = nh_.advertise<geometry_msgs::WrenchStamped>(topic_wrench_control, 5);
+
+	pub_desired_equilibrium_ = nh_.advertise<geometry_msgs::Point>(topic_desired_equilibrium, 5);
 
 
 
 	loadShare_ = 0;
 	M_estiamted_ = 0;
 	ForceZ_ = 0;
+
+	attractor_ = Z_ceiling_;
 
 	while (nh_.ok() ) {
 
@@ -58,23 +65,28 @@ void LoadSupportController::UpdateExternalForce(const geometry_msgs::WrenchStamp
 void LoadSupportController::ComputeLoadShare() {
 
 
-	double target_force = - wrench_external_(2);
+	double target_force = wrench_external_(2) * wrench_external_(2) + wrench_external_(1) * wrench_external_(1);
+	target_force =  sqrt(target_force);
 
 	double Fz_error =   target_force - ForceZ_;
 
-	if (Fz_error > 0) {
-		ForceZ_ += 0.1 * Fz_error;
-	}
-	else {
-		ForceZ_ += 0.2 * Fz_error;
-	}
+	// if (Fz_error > 0) {
+	// 	ForceZ_ += 0.1 * Fz_error;
+	// }
+	// else {
+	// 	ForceZ_ += 0.2 * Fz_error;
+	// }
+
+	ForceZ_ += 0.1 * Fz_error;
+
+
 
 	if (ForceZ_ < 0) {
 		ForceZ_ = 0;
 	}
 
-	if (ForceZ_ > 2*M_object_*gravity_acc) {
-		ForceZ_ = 2*M_object_*gravity_acc;
+	if (ForceZ_ > 2 * M_object_ * gravity_acc) {
+		ForceZ_ = 2 * M_object_ * gravity_acc;
 	}
 
 
@@ -113,6 +125,41 @@ void LoadSupportController::ComputeLoadShare() {
 	msg_wrench.wrench.torque.z = 0;
 	pub_control_wrench_.publish(msg_wrench);
 
+	double att_target = 0;
+
+	if (loadShare_ > 0.8) {
+		double beta = (loadShare_ - 0.8) / 0.1;
+
+		att_target = (1 - beta) * Z_ceiling_ + beta * Z_level_;
+
+		ROS_INFO_STREAM_THROTTLE(1, "Lowering the weight " <<  attractor_);
+	}
+	else {
+		att_target = Z_ceiling_;
+	}
+
+	if (attractor_ < Z_level_) {
+		attractor_ = Z_level_;
+	}
+
+
+	double att_err = att_target - attractor_;
+
+	if (att_err > 0) {
+		attractor_  += 0.001 * att_err;
+
+	}
+	else {
+		attractor_  += 0.0005 * att_err;
+
+	}
+
+
+	geometry_msgs::Point msg_point;
+	msg_point.x = 0.111;
+	msg_point.y = 0.494;
+	msg_point.z = attractor_;
+	pub_desired_equilibrium_.publish(msg_point);
 
 
 

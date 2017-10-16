@@ -5,18 +5,26 @@
 
   <arg name="WRENCH_CONTROL_TOPIC" default="/admittance_control/wrench_control" />
   <arg name="WRENCH_EXTERNAL_TOPIC" default="/admittance_control/u_e" />
+  <arg name="DESIRED_EQUILIBRIUM_TOPIC" default="/admittance_control/equilibrium" />
 
 <!-- using the wooden block int the lab! 666, the number of the beast! -->
-  <arg name="M_object" default="0.666" />
+  <arg name="M_object" default="1.666" />
+  <!-- Expected location of the object -->
+  <arg name="Z_ceiling" default="0.70" />
+  <!-- A location where the object should be brought down -->
+  <arg name="Z_level" default="0.25" />
 
 
 
 
   <!-- Running the node -->
 
-  <param name="wrench_external_topic_name" value="$(arg WRENCH_EXTERNAL_TOPIC)"/>
-  <param name="wrench_control_topic_name" value="$(arg WRENCH_CONTROL_TOPIC)"/>
+  <param name="topic_wrench_external" value="$(arg WRENCH_EXTERNAL_TOPIC)"/>
+  <param name="topic_wrench_control" value="$(arg WRENCH_CONTROL_TOPIC)"/>
+  <param name="topic_desired_equilibrium" value="$(arg DESIRED_EQUILIBRIUM_TOPIC)"/>
   <param name="M_object" value="$(arg M_object)"/>
+  <param name="Z_ceiling" value="$(arg Z_ceiling)"/>
+  <param name="Z_level" value="$(arg Z_level)"/>
 
 
   <node name="load_support_node"

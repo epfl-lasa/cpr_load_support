@@ -12,6 +12,7 @@
 // #include <vector>
 
 #include "geometry_msgs/WrenchStamped.h"
+#include "geometry_msgs/Point.h"
 
 
 #include "eigen3/Eigen/Core"
@@ -44,10 +45,8 @@ private:
 	ros::Subscriber sub_external_wrench_;
 
 	ros::Publisher pub_control_wrench_;
+	ros::Publisher pub_desired_equilibrium_;
 
-
-	std::string wrench_external_topic_name_;
-	std::string wrench_control_topic_name_;
 
 	//Controller variables
 	double M_object_;
@@ -55,6 +54,13 @@ private:
 	double loadShare_;
 
 	double ForceZ_;
+
+	// a height where the object is expected to be
+	double Z_ceiling_;
+	// a height where the object is supposed to be brought
+	double Z_level_;
+	// current attractor of the controller, a mixture of the two above
+	double attractor_;
 
 
 	// INPUT SIGNAL
@@ -70,8 +76,11 @@ public:
 	LoadSupportController(ros::NodeHandle &n,
 	                      double frequency,
 	                      double M_object,
-	                      std::string wrench_external_topic_name,
-	                      std::string wrench_control_topic_name);
+	                      double Z_ceiling,
+	                      double Z_level,
+	                      std::string topic_wrench_external,
+	                      std::string topic_wrench_control,
+	                      std::string topic_desired_equilibrium);
 
 
 	// void Run();
