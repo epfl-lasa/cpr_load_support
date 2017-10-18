@@ -4,8 +4,8 @@
   <!-- Declaring the variables -->
 
   <arg name="WRENCH_CONTROL_TOPIC" default="/admittance_control/wrench_control" />
-  <arg name="WRENCH_EXTERNAL_TOPIC" default="/admittance_control/u_e" />
-  <arg name="DESIRED_EQUILIBRIUM_TOPIC" default="/admittance_control/equilibrium" />
+  <arg name="WRENCH_EXTERNAL_TOPIC" default="/admittance_control/transformed/external_wrench" />
+  <arg name="DESIRED_EQUILIBRIUM_TOPIC" default="/admittance_control/equilibrium_desired" />
 
 <!-- using the wooden block int the lab! 666, the number of the beast! -->
   <arg name="M_object" default="1.666" />

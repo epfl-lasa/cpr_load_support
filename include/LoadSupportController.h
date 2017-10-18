@@ -31,6 +31,9 @@ typedef Matrix<double, 6, 6> Matrix6d;
 
 const double gravity_acc = 9.80665;
 
+template <typename T> int sign(T val) {
+    return (T(0) < val) - (val < T(0));
+}
 
 class LoadSupportController {
 

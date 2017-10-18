@@ -65,17 +65,14 @@ void LoadSupportController::UpdateExternalForce(const geometry_msgs::WrenchStamp
 void LoadSupportController::ComputeLoadShare() {
 
 
-	double target_force = wrench_external_(2) * wrench_external_(2) + wrench_external_(1) * wrench_external_(1);
-	target_force =  sqrt(target_force);
+	double side_force_x = -wrench_external_(0);
+	double side_force_y = -wrench_external_(1);
+	double target_force = -wrench_external_(2);
+
+
+
 
 	double Fz_error =   target_force - ForceZ_;
-
-	// if (Fz_error > 0) {
-	// 	ForceZ_ += 0.1 * Fz_error;
-	// }
-	// else {
-	// 	ForceZ_ += 0.2 * Fz_error;
-	// }
 
 	ForceZ_ += 0.1 * Fz_error;
 
@@ -108,6 +105,30 @@ void LoadSupportController::ComputeLoadShare() {
 
 
 
+	double missing_force = (M_object_ - M_estiamted_) * gravity_acc;
+	if(missing_force<0){
+		missing_force=0;
+	}
+
+
+
+	double ForceX = 0;
+	double ForceY = 0;
+
+	if (abs(side_force_x) < missing_force) {
+		ForceX = side_force_x;
+	}
+	else {
+		ForceX = - sign(side_force_x) * missing_force;
+	}
+
+	if (abs(side_force_y) < missing_force) {
+		ForceY = side_force_y;
+	}
+	else {
+		ForceY = - sign(side_force_y) * missing_force;
+	}
+
 
 
 
@@ -117,8 +138,8 @@ void LoadSupportController::ComputeLoadShare() {
 
 	msg_wrench.header.stamp    = ros::Time::now();
 	msg_wrench.header.frame_id = "ur5_arm_base_link";
-	msg_wrench.wrench.force.x  = 0;
-	msg_wrench.wrench.force.y  = 0;
+	msg_wrench.wrench.force.x  = ForceX;
+	msg_wrench.wrench.force.y  = ForceY;
 	msg_wrench.wrench.force.z  = ForceZ_;
 	msg_wrench.wrench.torque.x = 0;
 	msg_wrench.wrench.torque.y = 0;
