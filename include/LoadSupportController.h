@@ -14,6 +14,8 @@
 #include "geometry_msgs/WrenchStamped.h"
 #include "geometry_msgs/Point.h"
 
+#include <tf/transform_listener.h>
+
 
 #include "eigen3/Eigen/Core"
 #include "eigen3/Eigen/Geometry"
@@ -32,7 +34,7 @@ typedef Matrix<double, 6, 6> Matrix6d;
 const double gravity_acc = 9.80665;
 
 template <typename T> int sign(T val) {
-    return (T(0) < val) - (val < T(0));
+	return (T(0) < val) - (val < T(0));
 }
 
 class LoadSupportController {
@@ -63,7 +65,16 @@ private:
 	// a height where the object is supposed to be brought
 	double Z_level_;
 	// current attractor of the controller, a mixture of the two above
-	double attractor_;
+	double Z_attractor_;
+
+	double X_attractor_;
+	double Y_attractor_;
+
+	double target_x_;
+	double target_y_;
+
+
+
 
 
 	// INPUT SIGNAL
@@ -73,6 +84,10 @@ private:
 	// OUTPUT SIGNAL
 	// control wrench (from any controller) expected to be in "????" frame
 	Vector6d wrench_control_;
+
+
+	tf::TransformListener listener_object_;
+
 
 
 public:
@@ -97,6 +112,8 @@ private:
 	void UpdateExternalForce(const geometry_msgs::WrenchStamped::ConstPtr& msg);
 
 	void ComputeLoadShare();
+
+	void FindObject();
 
 	// void ComputeDesiredVelocity();
 

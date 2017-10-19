@@ -36,15 +36,98 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 	M_estiamted_ = 0;
 	ForceZ_ = 0;
 
-	attractor_ = Z_ceiling_;
+	X_attractor_ = 0.111;
+	Y_attractor_ = 0.494;
+
+	Z_attractor_ = Z_ceiling_;
 
 	while (nh_.ok() ) {
+
+		FindObject();
 
 		ComputeLoadShare();
 
 		ros::spinOnce();
 		loop_rate_.sleep();
 	}
+
+}
+
+void LoadSupportController::FindObject() {
+
+	tf::StampedTransform transform;
+
+	if (true) {
+		try {
+			listener_object_.lookupTransform("ur5_arm_base_link", "object",
+			                                 ros::Time(0), transform);
+
+			target_x_ = transform.getOrigin().x();
+			target_y_ = transform.getOrigin().y();
+
+		}
+		catch (tf::TransformException ex) {
+			ROS_WARN_THROTTLE(1, "Couldn't find transform between arm and the object");
+			target_x_ = 0.111;
+			target_y_ = 0.494;
+		}
+	}
+
+
+
+	// if (abs(target_x_ - X_attractor_) < 0.15 && abs(target_y_ - Y_attractor_) < 0.15) {
+	// 	X_attractor_ += 0.1 * (0.111 - X_attractor_);
+	// 	Y_attractor_ += 0.1 * (0.494 - Y_attractor_);
+	// }
+
+	double dist_to_cent = (target_x_ - 0.111 )*(target_x_ - 0.111 ) +
+	(target_y_ - 0.494)*(target_y_ - 0.494);
+	dist_to_cent = sqrt(dist_to_cent);
+
+
+	if (dist_to_cent > 0.3) {
+		X_attractor_ += 0.005 * (0.111 - X_attractor_);
+		Y_attractor_ += 0.005 * (0.494 - Y_attractor_);
+		ROS_INFO_STREAM_THROTTLE(1, "Target is far!");
+
+	}
+	else if (dist_to_cent > 0.05) {
+
+		X_attractor_ += 0.005 * (target_x_ - X_attractor_);
+		Y_attractor_ += 0.005 * (target_y_ - Y_attractor_);
+		ROS_INFO_STREAM_THROTTLE(1 , "Target is close!");
+
+	}
+
+
+
+
+
+
+	// if (abs(target_x_ - 0.111)  < 0.3 && abs(target_y_ - 0.494)  < 0.3) {
+
+
+	// 	ROS_INFO_STREAM_THROTTLE(1, "Target is close!");
+
+	// }
+	// else {
+	// 	X_attractor_ += 0.1 * (0.111 - X_attractor_);
+	// 	Y_attractor_ += 0.1 * (0.494 - Y_attractor_);
+	// 	ROS_INFO_STREAM_THROTTLE(1, "Target is far!");
+
+	// }
+
+
+	// if (abs(error_x) < 0.5  && abs(error_y) < 0.5) {
+	// 	if (abs(error_x) > 0.1  && abs(error_y) > 0.1) {
+
+
+	// 	}
+	// }
+
+
+
+	ROS_INFO_STREAM_THROTTLE(1, "X_att:" <<  X_attractor_ << " Y_att:"  << Y_attractor_ );
 
 }
 
@@ -106,8 +189,8 @@ void LoadSupportController::ComputeLoadShare() {
 
 
 	double missing_force = (M_object_ - M_estiamted_) * gravity_acc;
-	if(missing_force<0){
-		missing_force=0;
+	if (missing_force < 0) {
+		missing_force = 0;
 	}
 
 
@@ -153,33 +236,33 @@ void LoadSupportController::ComputeLoadShare() {
 
 		att_target = (1 - beta) * Z_ceiling_ + beta * Z_level_;
 
-		ROS_INFO_STREAM_THROTTLE(1, "Lowering the weight " <<  attractor_);
+		ROS_INFO_STREAM_THROTTLE(1, "Lowering the weight " <<  Z_attractor_);
 	}
 	else {
 		att_target = Z_ceiling_;
 	}
 
-	if (attractor_ < Z_level_) {
-		attractor_ = Z_level_;
+	if (Z_attractor_ < Z_level_) {
+		Z_attractor_ = Z_level_;
 	}
 
 
-	double att_err = att_target - attractor_;
+	double att_err = att_target - Z_attractor_;
 
 	if (att_err > 0) {
-		attractor_  += 0.001 * att_err;
+		Z_attractor_  += 0.001 * att_err;
 
 	}
 	else {
-		attractor_  += 0.0005 * att_err;
+		Z_attractor_  += 0.0005 * att_err;
 
 	}
 
 
 	geometry_msgs::Point msg_point;
-	msg_point.x = 0.111;
-	msg_point.y = 0.494;
-	msg_point.z = attractor_;
+	msg_point.x = X_attractor_;
+	msg_point.y = Y_attractor_;
+	msg_point.z = Z_attractor_;
 	pub_desired_equilibrium_.publish(msg_point);
 
 

@@ -16,17 +16,22 @@ ObjectTracker::ObjectTracker(
 
 	tf::StampedTransform transform_corner_calibration;
 	tf::StampedTransform transform_corner_object;
-
+	tf::StampedTransform transform_base_link;
+	tf::StampedTransform transform_corner_base;
 
 
 	ROS_INFO("Calibration: put the object-marker on top of the imu-sensor and press Enter");
 	std::cin.get();
 
+	ros::Duration time_diff;
+
 
 	bool robots_tf_ready = false;
 	bool mocap_tf_ready  = false;
+	bool time_robot      = false;
+bool corner_base_ready = false;
 
-	while (nh_.ok() && (!robots_tf_ready || !mocap_tf_ready) ) {
+	while (nh_.ok() && (!robots_tf_ready || !mocap_tf_ready || !time_robot || !corner_base_ready) ) {
 
 
 		try {
@@ -47,6 +52,35 @@ ObjectTracker::ObjectTracker(
 			ROS_WARN_STREAM_THROTTLE(1, "Waiting for TF from: " << "mocap_top_right_corner" << " to: " << "mocap_object" );
 		}
 
+
+		try {
+			listener_.lookupTransform("base_link", "base_link",
+			                          ros::Time(0), transform_base_link);
+
+			time_robot = true;
+
+			time_diff = transform_base_link.stamp_ - ros::Time::now();
+			ROS_INFO_STREAM("Time difference:" << time_diff );
+
+		}
+		catch (tf::TransformException ex) {
+			ROS_WARN_STREAM_THROTTLE(1, "Waiting for TF from: " << "top_right_corner" << " to: " << "top_left_corner" );
+		}
+
+
+		try {
+			listener_.lookupTransform("top_right_corner", "base_link",
+			                          ros::Time(0), transform_corner_base);
+
+			corner_base_ready = true;
+
+		}
+		catch (tf::TransformException ex) {
+			ROS_WARN_STREAM_THROTTLE(1, "Waiting for TF from: " << "top_right_corner" << " to: " << "base" );
+		}
+
+
+
 		ros::spinOnce();
 		loop_rate_.sleep();
 
@@ -59,7 +93,7 @@ ObjectTracker::ObjectTracker(
 
 	tf::Vector3 xyz = origin1.cross(origin2);
 	xyz.normalized();
-	double w = 1.0 * acos(origin1.dot(origin2)/ (origin1.length() * origin2.length()));
+	double w = 1.0 * acos(origin1.dot(origin2) / (origin1.length() * origin2.length()));
 
 
 	tf::Quaternion quat_offset(xyz, w);
@@ -89,8 +123,14 @@ ObjectTracker::ObjectTracker(
 			transform.setOrigin(correct_position);
 
 
-			br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "top_right_corner", "object"));
 
+			// br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "top_right_corner", "object"));
+			transform.setData(transform_corner_base.inverse() * transform );
+
+			transform.stamp_ = ros::Time::now() + time_diff;
+			transform.frame_id_ = "base_link";
+			transform.child_frame_id_ = "object";
+			br.sendTransform(transform);
 
 		}
 		catch (tf::TransformException ex) {
