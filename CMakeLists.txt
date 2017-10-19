@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf
+  tf_conversions
 )
 
 
@@ -143,13 +145,23 @@ add_executable(cpr_load_support_node
 	include/LoadSupportController.h)
 
 
+add_executable(object_tracking_node 
+  src/object_tracking_node.cpp
+  src/ObjectTracker.cpp
+  include/ObjectTracker.h)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(cpr_load_support_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_dependencies(object_tracking_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 ## Specify libraries to link a library or executable target against
 target_link_libraries(cpr_load_support_node
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(object_tracking_node
   ${catkin_LIBRARIES}
 )
 

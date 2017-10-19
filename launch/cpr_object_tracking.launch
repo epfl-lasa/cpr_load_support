@@ -1,0 +1,40 @@
+<launch>
+
+  <!-- Pass in mocap_config_file:=/path/to/config.yaml to change options. -->
+  <arg name="mocap_config_file"
+       default="$(find cpr_load_support)/config/mocap_cpr.yml" />
+
+  <group>
+    <node name="mocap_node"
+          pkg="mocap_optitrack"
+          type="mocap_node"
+          respawn="false"
+          output="screen"
+          launch-prefix=""
+          required="true">
+      <rosparam file="$(arg mocap_config_file)" command="load" />
+    </node>
+
+        <node name="object_tracking_node"
+          pkg ="cpr_load_support"
+          type="object_tracking_node"
+          output="screen">
+    </node>
+
+
+
+    <!-- adding a statif tf for the cpr_top_right_corner -->
+    <node name="tf_publisher_corner_1" 
+      pkg="tf" 
+      type="static_transform_publisher"  
+      args="-.36 0.24 1.025 0.0 0.0 0.0 base_link top_right_corner 5" />
+
+    <node name="tf_publisher_corner_2" 
+      pkg="tf" 
+      type="static_transform_publisher"  
+      args="-0.04 -.46 0.03 0.0 0.0 0.0 top_right_corner top_left_corner 5" />
+
+  </group>
+
+
+</launch>
