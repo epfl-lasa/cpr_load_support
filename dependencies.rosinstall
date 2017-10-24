@@ -1,0 +1,3 @@
+- git:
+    local-name: mocap_optitrack
+    uri: git@github.com:epfl-lasa/mocap_optitrack.git
