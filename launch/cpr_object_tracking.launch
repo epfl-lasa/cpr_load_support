@@ -15,7 +15,15 @@
       <rosparam file="$(arg mocap_config_file)" command="load" />
     </node>
 
-        <node name="object_tracking_node"
+    <!-- <param name="frame_robot_calibration" value="robotiq_force_torque_frame_id"/> -->
+    <param name="frame_robot_calibration" value="top_left_corner"/>
+    <param name="frame_robot_static" value="top_right_corner"/>
+    <param name="frame_robot_object" value="object"/>
+    <param name="frame_robot_base" value="base_link"/>
+    <param name="frame_mocap_static" value="mocap_top_right_corner"/>
+    <param name="frame_mocap_object" value="mocap_object"/>
+
+    <node name="object_tracking_node"
           pkg ="cpr_load_support"
           type="object_tracking_node"
           output="screen">
