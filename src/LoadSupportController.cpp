@@ -1,6 +1,8 @@
 #include "LoadSupportController.h"
 
 
+#include <string>
+#include <iostream>
 
 
 LoadSupportController::LoadSupportController(ros::NodeHandle &n,
@@ -31,6 +33,12 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 	pub_desired_equilibrium_ = nh_.advertise<geometry_msgs::Point>(topic_desired_equilibrium, 5);
 
 
+	ros::Duration(1).sleep(); // wait for soundplay to start running
+
+	soundclinet_.say("I am alive!");
+	ros::Duration(1).sleep(); // wait for soundplay to start running
+
+
 
 	loadShare_ = 0;
 	M_estiamted_ = 0;
@@ -40,6 +48,10 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 	Y_attractor_ = 0.494;
 
 	Z_attractor_ = Z_ceiling_;
+
+	state_marker_old_ = "lost";
+	state_marker_new_ = "lost";
+
 
 	while (nh_.ok() ) {
 
@@ -56,48 +68,104 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 void LoadSupportController::FindObject() {
 
 	tf::StampedTransform transform;
+	tf::Vector3 ee_to_obejct;
+	ee_to_obejct.setZero();
 
 	if (true) {
 		try {
-			listener_object_.lookupTransform("ur5_arm_base_link", "object",
+			listener_object_.lookupTransform("robotiq_force_torque_frame_id", "object",
 			                                 ros::Time(0), transform);
 
-			target_x_ = transform.getOrigin().x();
-			target_y_ = transform.getOrigin().y();
+			ee_to_obejct =  transform.getOrigin();
+
+			if (ee_to_obejct.length() > 1) {
+				state_marker_new_ = "far";
+
+				soundclinet_.say("The marker is too far away!");
+
+			}
+
+			if (ee_to_obejct.length() < .1) {
+				state_marker_new_ = "close";
+
+				soundclinet_.say("I reached the marker!");
+
+			}
+
 
 		}
 		catch (tf::TransformException ex) {
-			ROS_WARN_THROTTLE(1, "Couldn't find transform between arm and the object");
-			target_x_ = 0.111;
-			target_y_ = 0.494;
+			ROS_WARN_THROTTLE(1, "Couldn't find transform between ee and the object");
+			state_marker_new_ = "lost";
+
+		}
+	}
+
+
+	if (state_marker_new_.compare(state_marker_old_)) {
+		state_marker_old_ = state_marker_new_;
+
+
+		if (!state_marker_new_.compare("lost")) {
+			soundclinet_.say("I cannot see the marker!");
+		}
+		if (!state_marker_new_.compare("far")) {
+			ROS_INFO_STREAM_THROTTLE(1, "The marker is too far away!");
+		}
+		if (!state_marker_new_.compare("close")) {
+			ROS_INFO_STREAM_THROTTLE(1, "I reached the marker");
 		}
 	}
 
 
 
-	// if (abs(target_x_ - X_attractor_) < 0.15 && abs(target_y_ - Y_attractor_) < 0.15) {
-	// 	X_attractor_ += 0.1 * (0.111 - X_attractor_);
-	// 	Y_attractor_ += 0.1 * (0.494 - Y_attractor_);
+
+
+
+
+
+
+	// if (true) {
+	// 	try {
+	// 		listener_object_.lookupTransform("ur5_arm_base_link", "object",
+	// 		                                 ros::Time(0), transform);
+
+	// 		target_x_ = transform.getOrigin().x();
+	// 		target_y_ = transform.getOrigin().y();
+
+	// 	}
+	// 	catch (tf::TransformException ex) {
+	// 		ROS_WARN_THROTTLE(1, "Couldn't find transform between arm and the object");
+	// 		target_x_ = 0.111;
+	// 		target_y_ = 0.494;
+	// 	}
 	// }
 
-	double dist_to_cent = (target_x_ - 0.111 )*(target_x_ - 0.111 ) +
-	(target_y_ - 0.494)*(target_y_ - 0.494);
-	dist_to_cent = sqrt(dist_to_cent);
 
 
-	if (dist_to_cent > 0.3) {
-		X_attractor_ += 0.005 * (0.111 - X_attractor_);
-		Y_attractor_ += 0.005 * (0.494 - Y_attractor_);
-		ROS_INFO_STREAM_THROTTLE(1, "Target is far!");
+	// // if (abs(target_x_ - X_attractor_) < 0.15 && abs(target_y_ - Y_attractor_) < 0.15) {
+	// // 	X_attractor_ += 0.1 * (0.111 - X_attractor_);
+	// // 	Y_attractor_ += 0.1 * (0.494 - Y_attractor_);
+	// // }
 
-	}
-	else if (dist_to_cent > 0.05) {
+	// double dist_to_cent = (target_x_ - 0.111 ) * (target_x_ - 0.111 ) +
+	//                       (target_y_ - 0.494) * (target_y_ - 0.494);
+	// dist_to_cent = sqrt(dist_to_cent);
 
-		X_attractor_ += 0.005 * (target_x_ - X_attractor_);
-		Y_attractor_ += 0.005 * (target_y_ - Y_attractor_);
-		ROS_INFO_STREAM_THROTTLE(1 , "Target is close!");
 
-	}
+	// if (dist_to_cent > 0.3) {
+	// 	X_attractor_ += 0.005 * (0.111 - X_attractor_);
+	// 	Y_attractor_ += 0.005 * (0.494 - Y_attractor_);
+	// 	ROS_INFO_STREAM_THROTTLE(1, "Target is far!");
+
+	// }
+	// else if (dist_to_cent > 0.05) {
+
+	// 	X_attractor_ += 0.005 * (target_x_ - X_attractor_);
+	// 	Y_attractor_ += 0.005 * (target_y_ - Y_attractor_);
+	// 	ROS_INFO_STREAM_THROTTLE(1 , "Target is close!");
+
+	// }
 
 
 

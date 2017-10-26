@@ -15,7 +15,7 @@
   <arg name="Z_level" default="0.25" />
 
 
-
+  <node name="speech_node" pkg="sound_play" type="soundplay_node.py" />
 
   <!-- Running the node -->
 
@@ -29,6 +29,9 @@
 
   <node name="load_support_node"
   	pkg="cpr_load_support" type="cpr_load_support_node" output="screen"/>
+
+
+
 
 
 

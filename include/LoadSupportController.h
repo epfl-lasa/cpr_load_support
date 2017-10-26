@@ -22,6 +22,9 @@
 #include "eigen3/Eigen/Dense"
 
 
+#include <sound_play/sound_play.h>
+
+
 // #include <mutex>
 
 using namespace Eigen;
@@ -47,11 +50,16 @@ private:
 	ros::Rate loop_rate_;
 	double dt_;
 
+	sound_play::SoundClient soundclinet_;
+
 	ros::Subscriber sub_external_wrench_;
 
 	ros::Publisher pub_control_wrench_;
 	ros::Publisher pub_desired_equilibrium_;
 
+
+	std::string state_marker_old_;
+	std::string state_marker_new_;
 
 	//Controller variables
 	double M_object_;
