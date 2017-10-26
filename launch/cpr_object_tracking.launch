@@ -16,12 +16,16 @@
     </node>
 
     <!-- <param name="frame_robot_calibration" value="robotiq_force_torque_frame_id"/> -->
-    <param name="frame_robot_calibration" value="top_left_corner"/>
-    <param name="frame_robot_static" value="top_right_corner"/>
-    <param name="frame_robot_object" value="object"/>
-    <param name="frame_robot_base" value="base_link"/>
-    <param name="frame_mocap_static" value="mocap_top_right_corner"/>
-    <param name="frame_mocap_object" value="mocap_object"/>
+    <param name="frame_platform_base"     value="base_link"/>
+    <param name="frame_arm_base"          value="ur5_arm_base"/>
+
+    <param name="frame_robot_calibration" value="mid_pc_link"/>
+    <param name="frame_robot_endeffector" value="robotiq_force_torque_frame_id"/>
+    <param name="frame_robot_object"      value="object"/>
+
+    <param name="frame_mocap_calibration" value="mocap_mid_pc"/>
+    <param name="frame_mocap_endeffector" value="mocap_palm"/>
+    <param name="frame_mocap_object"      value="mocap_object"/>
 
     <node name="object_tracking_node"
           pkg ="cpr_load_support"
@@ -31,16 +35,11 @@
 
 
 
-    <!-- adding a statif tf for the cpr_top_right_corner -->
-    <node name="tf_publisher_corner_1" 
+    <!-- This tf corresponds to the marker that is attached to the pc on the platform -->
+    <node name="tf_publisher_mid_pc" 
       pkg="tf" 
       type="static_transform_publisher"  
-      args="-.36 0.24 1.025 0.0 0.0 0.0 base_link top_right_corner 5" />
-
-    <node name="tf_publisher_corner_2" 
-      pkg="tf" 
-      type="static_transform_publisher"  
-      args="-0.04 -.46 0.03 0.0 0.0 0.0 top_right_corner top_left_corner 5" />
+      args="-.23 0.0 .35 0.0 0.0 0.0 base_link mid_pc_link 5" />
 
   </group>
 

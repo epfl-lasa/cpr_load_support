@@ -20,17 +20,18 @@ private:
 	tf::TransformListener listener_;
 	tf::TransformBroadcaster brodcaster_;
 
-	std::string frame_robot_static_;
+	std::string frame_platform_base_;
+	std::string frame_arm_base_;
 	std::string frame_robot_calibration_;
-	std::string frame_mocap_static_;
-	std::string frame_mocap_object_;
+	std::string frame_robot_endeffector_;
 	std::string frame_robot_object_;
-	std::string frame_robot_base_;
+	std::string frame_mocap_calibration_;
+	std::string frame_mocap_endeffector_;
+	std::string frame_mocap_object_;
 
 	tf::Quaternion quat_offset_;
 
 	tf::StampedTransform transform_static_base_;
-
 
 	ros::Duration time_diff_;
 
@@ -38,11 +39,13 @@ private:
 public:
 	ObjectTracker(ros::NodeHandle &n,
 	              double frequency,
-	              std::string frame_robot_static,
+	              std::string frame_platform_base,
+	              std::string frame_arm_base,
 	              std::string frame_robot_calibration,
+	              std::string frame_robot_endeffector,
 	              std::string frame_robot_object,
-	              std::string frame_robot_base,
-	              std::string frame_mocap_static,
+	              std::string frame_mocap_calibration,
+	              std::string frame_mocap_endeffector,
 	              std::string frame_mocap_object);
 
 
