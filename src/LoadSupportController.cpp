@@ -36,7 +36,7 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 	ros::Duration(1).sleep(); // wait for soundplay to start running
 
 	soundclinet_.say("I am alive!");
-	ros::Duration(1).sleep(); // wait for soundplay to start running
+	ros::Duration(2).sleep(); // wait for soundplay to start running
 
 
 
@@ -49,8 +49,15 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 
 	Z_attractor_ = Z_ceiling_;
 
-	state_marker_old_ = "lost";
+	state_marker_old_ = "close";
 	state_marker_new_ = "lost";
+
+	ros::Time::now();
+	talking_rate_ = 2;
+	repeating_rate_ = 10;
+	time_talk_ = ros::Time::now() + ros::Duration(talking_rate_);
+	time_repeat_ = ros::Time::now() + ros::Duration(repeating_rate_);
+
 
 
 	while (nh_.ok() ) {
@@ -73,23 +80,20 @@ void LoadSupportController::FindObject() {
 
 	if (true) {
 		try {
-			listener_object_.lookupTransform("robotiq_force_torque_frame_id", "object",
+			// listener_object_.lookupTransform("robotiq_force_torque_frame_id", "object",
+			listener_object_.lookupTransform("mocap_palm", "mocap_object",
 			                                 ros::Time(0), transform);
 
 			ee_to_obejct =  transform.getOrigin();
 
 			if (ee_to_obejct.length() > 1) {
 				state_marker_new_ = "far";
-
-				soundclinet_.say("The marker is too far away!");
-
 			}
-
-			if (ee_to_obejct.length() < .1) {
+			else if (ee_to_obejct.length() < .1) {
 				state_marker_new_ = "close";
-
-				soundclinet_.say("I reached the marker!");
-
+			}
+			else {
+				state_marker_new_ = "tracking";
 			}
 
 
@@ -99,23 +103,49 @@ void LoadSupportController::FindObject() {
 			state_marker_new_ = "lost";
 
 		}
+
+		ROS_INFO_STREAM_THROTTLE(1, "distance to ee: " <<  ee_to_obejct.length());
+		ROS_INFO_STREAM_THROTTLE(1, "state flag: " <<  state_marker_new_ << " the old one: " << state_marker_old_);
+
+
 	}
 
+	// ROS_INFO_STREAM((ros::Time::now() - time_talk_));
 
-	if (state_marker_new_.compare(state_marker_old_)) {
+	if (state_marker_new_.compare(state_marker_old_) && (ros::Time::now() - time_talk_).toSec() > 0  ) {
+
 		state_marker_old_ = state_marker_new_;
+		time_talk_ = ros::Time::now() + ros::Duration(talking_rate_);
+
 
 
 		if (!state_marker_new_.compare("lost")) {
 			soundclinet_.say("I cannot see the marker!");
+			ROS_WARN_THROTTLE(1, "............ In the lost parT!");
 		}
 		if (!state_marker_new_.compare("far")) {
-			ROS_INFO_STREAM_THROTTLE(1, "The marker is too far away!");
+			soundclinet_.say("The marker is too far!");
+			ROS_INFO_STREAM_THROTTLE(1, "............  The marker is too far away!");
 		}
 		if (!state_marker_new_.compare("close")) {
-			ROS_INFO_STREAM_THROTTLE(1, "I reached the marker");
+			soundclinet_.say("I reach the marker!");
+			ROS_INFO_STREAM_THROTTLE(1, " ............  I reached the marker");
 		}
+		if (!state_marker_new_.compare("tracking")) {
+			soundclinet_.say("I am tracking the marker!");
+			ROS_INFO_STREAM_THROTTLE(1, " ............  I am tracking the marker");
+		}
+
+
 	}
+
+	if (!state_marker_new_.compare("tracking") && (ros::Time::now() - time_repeat_).toSec() > 0  ) {
+	time_repeat_ = ros::Time::now() + ros::Duration(repeating_rate_);
+
+		soundclinet_.say("I am still tracking the marker!");
+		ROS_INFO_STREAM_THROTTLE(1, " ............  I am tracking the marker");
+	}
+
 
 
 

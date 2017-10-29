@@ -61,6 +61,12 @@ private:
 	std::string state_marker_old_;
 	std::string state_marker_new_;
 
+	ros::Time time_talk_;
+	ros::Time time_repeat_;
+	double talking_rate_;
+	double repeating_rate_;
+
+
 	//Controller variables
 	double M_object_;
 	double M_estiamted_;
