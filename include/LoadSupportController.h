@@ -9,7 +9,7 @@
 // #include "nav_msgs/Path.h"
 
 
-// #include <vector>
+#include <vector>
 
 #include "geometry_msgs/WrenchStamped.h"
 #include "geometry_msgs/Point.h"
@@ -29,6 +29,7 @@
 
 using namespace Eigen;
 
+typedef Matrix<double, 3, 1> Vector3d;
 typedef Matrix<double, 7, 1> Vector7d;
 typedef Matrix<double, 6, 1> Vector6d;
 typedef Matrix<double, 6, 6> Matrix6d;
@@ -57,22 +58,25 @@ private:
 	ros::Publisher pub_control_wrench_;
 	ros::Publisher pub_desired_equilibrium_;
 
+	std::string speech_statement_;
+	std::string speech_statement_last_;
 
-	std::string state_marker_old_;
-	std::string state_marker_new_;
+	ros::Time time_to_be_silient_;
+	ros::Time time_to_say_something_;
 
-	ros::Time time_talk_;
-	ros::Time time_repeat_;
 	double talking_rate_;
-	double repeating_rate_;
+	double talking_forced_rate_;
 
 
 	//Controller variables
 	double M_object_;
-	double M_estiamted_;
 	double loadShare_;
 
-	double ForceZ_;
+
+	double Weight_;
+
+	// upper limit for the maximum computed weight
+	double MAX_weight_;
 
 	// a height where the object is expected to be
 	double Z_ceiling_;
@@ -88,6 +92,7 @@ private:
 	double target_y_;
 
 
+	Vector3d Force_control_;
 
 
 
@@ -128,6 +133,12 @@ private:
 	void ComputeLoadShare();
 
 	void FindObject();
+
+	void SayWhatIsHappining();
+
+	void WeightCompensation();
+
+	void ComputeEquilibriumPoint();
 
 	// void ComputeDesiredVelocity();
 

@@ -8,7 +8,7 @@
   <arg name="DESIRED_EQUILIBRIUM_TOPIC" default="/admittance_control/equilibrium_desired" />
 
 <!-- using the wooden block int the lab! 666, the number of the beast! -->
-  <arg name="M_object" default="1.666" />
+  <arg name="M_object" default="0.604" />
   <!-- Expected location of the object -->
   <arg name="Z_ceiling" default="0.70" />
   <!-- A location where the object should be brought down -->

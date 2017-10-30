@@ -33,30 +33,49 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 	pub_desired_equilibrium_ = nh_.advertise<geometry_msgs::Point>(topic_desired_equilibrium, 5);
 
 
-	ros::Duration(1).sleep(); // wait for soundplay to start running
 
-	soundclinet_.say("I am alive!");
-	ros::Duration(2).sleep(); // wait for soundplay to start running
 
+
+	Weight_ = 0;
+
+	MAX_weight_ = 2 * M_object_ * gravity_acc;
+
+	Force_control_.setZero();
 
 
 	loadShare_ = 0;
-	M_estiamted_ = 0;
-	ForceZ_ = 0;
 
 	X_attractor_ = 0.111;
 	Y_attractor_ = 0.494;
 
 	Z_attractor_ = Z_ceiling_;
 
-	state_marker_old_ = "close";
-	state_marker_new_ = "lost";
 
+
+
+
+	// wait for soundplay to start running
+	ros::Duration(1).sleep();
+	// Say something on the startup
+	soundclinet_.say("I am alive! How can I serve you?");
+	// wait for the sound to be played
+	ros::Duration(2).sleep();
+
+	// reseting ROS-Time (not really necessary I guess).
 	ros::Time::now();
+
+	// a refractory period (e.g 2seconds) between each talking commands
 	talking_rate_ = 2;
-	repeating_rate_ = 10;
-	time_talk_ = ros::Time::now() + ros::Duration(talking_rate_);
-	time_repeat_ = ros::Time::now() + ros::Duration(repeating_rate_);
+	// a time-duration that robot should not stay silent more than
+	talking_forced_rate_ = 10;
+	// next time that the robot is allowed to speak
+	time_to_be_silient_ = ros::Time::now() + ros::Duration(talking_rate_);
+	// next maximum time that the robot say something
+	time_to_say_something_ = ros::Time::now() + ros::Duration(talking_forced_rate_);
+
+	speech_statement_ = "I have nothing to say!";
+	speech_statement_last_ = speech_statement_;
+
 
 
 
@@ -66,9 +85,38 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 
 		ComputeLoadShare();
 
+		WeightCompensation();
+
+		ComputeEquilibriumPoint();
+
+		// the robot only talks if a refractory period has passed (i.e., talking_rate_)
+		if ( (ros::Time::now() - time_to_be_silient_).toSec() > 0  ) {
+			if (speech_statement_.compare(speech_statement_last_) || (ros::Time::now() - time_to_say_something_).toSec() > 0) {
+				SayWhatIsHappining();
+				time_to_be_silient_ = ros::Time::now() + ros::Duration(talking_rate_);
+				time_to_say_something_ = ros::Time::now() + ros::Duration(talking_forced_rate_);
+			}
+		}
+
+
+
 		ros::spinOnce();
 		loop_rate_.sleep();
 	}
+
+}
+
+// The robot says what is stored in "speech_statement_"
+void LoadSupportController::SayWhatIsHappining() {
+
+	// only talk if the robot has something new to say
+	// if (speech_statement_.compare(speech_statement_last_) ) {
+	speech_statement_last_ = speech_statement_;
+	soundclinet_.say(speech_statement_);
+	ROS_INFO_STREAM_THROTTLE(1, "Talking: " << speech_statement_);
+	// }
+
+
 
 }
 
@@ -78,151 +126,52 @@ void LoadSupportController::FindObject() {
 	tf::Vector3 ee_to_obejct;
 	ee_to_obejct.setZero();
 
-	if (true) {
-		try {
-			// listener_object_.lookupTransform("robotiq_force_torque_frame_id", "object",
-			listener_object_.lookupTransform("mocap_palm", "mocap_object",
-			                                 ros::Time(0), transform);
+	// the default location of the equilibrium in the frame of the arm
+	target_x_ = 0.111;
+	target_y_ = 0.494;
 
-			ee_to_obejct =  transform.getOrigin();
+	// first we read and check the distance of the object with respect to the end-effector of the robot
+	try {
+		listener_object_.lookupTransform("robotiq_force_torque_frame_id", "object",
+		                                 // listener_object_.lookupTransform("mocap_palm", "mocap_object",
+		                                 ros::Time(0), transform);
 
-			if (ee_to_obejct.length() > 1) {
-				state_marker_new_ = "far";
-			}
-			else if (ee_to_obejct.length() < .1) {
-				state_marker_new_ = "close";
-			}
-			else {
-				state_marker_new_ = "tracking";
-			}
+		ee_to_obejct =  transform.getOrigin();
 
-
+		if (ee_to_obejct.length() > 1) {
+			speech_statement_ = "The object is too far.";
 		}
-		catch (tf::TransformException ex) {
-			ROS_WARN_THROTTLE(1, "Couldn't find transform between ee and the object");
-			state_marker_new_ = "lost";
-
+		else if (ee_to_obejct.length() < .1) {
+			speech_statement_ = "I reached the object.";
 		}
+		else {
+			speech_statement_ = "I am tracking the marker.";
 
-		ROS_INFO_STREAM_THROTTLE(1, "distance to ee: " <<  ee_to_obejct.length());
-		ROS_INFO_STREAM_THROTTLE(1, "state flag: " <<  state_marker_new_ << " the old one: " << state_marker_old_);
+			try {
+				listener_object_.lookupTransform("ur5_arm_base_link", "object",
+				                                 ros::Time(0), transform);
 
+				target_x_ = transform.getOrigin().x();
+				target_y_ = transform.getOrigin().y();
 
+			}
+			catch (tf::TransformException ex) {
+				ROS_WARN_THROTTLE(1, "Couldn't find transform between arm and the object");
+			}
+		}
+	}
+	catch (tf::TransformException ex) {
+		ROS_WARN_THROTTLE(1, "Couldn't find transform between ee and the object");
+		speech_statement_ = "I can not find the marker!";
 	}
 
-	// ROS_INFO_STREAM((ros::Time::now() - time_talk_));
-
-	if (state_marker_new_.compare(state_marker_old_) && (ros::Time::now() - time_talk_).toSec() > 0  ) {
-
-		state_marker_old_ = state_marker_new_;
-		time_talk_ = ros::Time::now() + ros::Duration(talking_rate_);
+	ROS_INFO_STREAM_THROTTLE(1, "distance to ee: " <<  ee_to_obejct.length());
 
 
-
-		if (!state_marker_new_.compare("lost")) {
-			soundclinet_.say("I cannot see the marker!");
-			ROS_WARN_THROTTLE(1, "............ In the lost parT!");
-		}
-		if (!state_marker_new_.compare("far")) {
-			soundclinet_.say("The marker is too far!");
-			ROS_INFO_STREAM_THROTTLE(1, "............  The marker is too far away!");
-		}
-		if (!state_marker_new_.compare("close")) {
-			soundclinet_.say("I reach the marker!");
-			ROS_INFO_STREAM_THROTTLE(1, " ............  I reached the marker");
-		}
-		if (!state_marker_new_.compare("tracking")) {
-			soundclinet_.say("I am tracking the marker!");
-			ROS_INFO_STREAM_THROTTLE(1, " ............  I am tracking the marker");
-		}
-
-
-	}
-
-	if (!state_marker_new_.compare("tracking") && (ros::Time::now() - time_repeat_).toSec() > 0  ) {
-	time_repeat_ = ros::Time::now() + ros::Duration(repeating_rate_);
-
-		soundclinet_.say("I am still tracking the marker!");
-		ROS_INFO_STREAM_THROTTLE(1, " ............  I am tracking the marker");
-	}
-
-
-
-
-
-
-
-
-
-
-	// if (true) {
-	// 	try {
-	// 		listener_object_.lookupTransform("ur5_arm_base_link", "object",
-	// 		                                 ros::Time(0), transform);
-
-	// 		target_x_ = transform.getOrigin().x();
-	// 		target_y_ = transform.getOrigin().y();
-
-	// 	}
-	// 	catch (tf::TransformException ex) {
-	// 		ROS_WARN_THROTTLE(1, "Couldn't find transform between arm and the object");
-	// 		target_x_ = 0.111;
-	// 		target_y_ = 0.494;
-	// 	}
-	// }
-
-
-
-	// // if (abs(target_x_ - X_attractor_) < 0.15 && abs(target_y_ - Y_attractor_) < 0.15) {
-	// // 	X_attractor_ += 0.1 * (0.111 - X_attractor_);
-	// // 	Y_attractor_ += 0.1 * (0.494 - Y_attractor_);
-	// // }
-
-	// double dist_to_cent = (target_x_ - 0.111 ) * (target_x_ - 0.111 ) +
-	//                       (target_y_ - 0.494) * (target_y_ - 0.494);
-	// dist_to_cent = sqrt(dist_to_cent);
-
-
-	// if (dist_to_cent > 0.3) {
-	// 	X_attractor_ += 0.005 * (0.111 - X_attractor_);
-	// 	Y_attractor_ += 0.005 * (0.494 - Y_attractor_);
-	// 	ROS_INFO_STREAM_THROTTLE(1, "Target is far!");
-
-	// }
-	// else if (dist_to_cent > 0.05) {
-
-	// 	X_attractor_ += 0.005 * (target_x_ - X_attractor_);
-	// 	Y_attractor_ += 0.005 * (target_y_ - Y_attractor_);
-	// 	ROS_INFO_STREAM_THROTTLE(1 , "Target is close!");
-
-	// }
-
-
-
-
-
-
-	// if (abs(target_x_ - 0.111)  < 0.3 && abs(target_y_ - 0.494)  < 0.3) {
-
-
-	// 	ROS_INFO_STREAM_THROTTLE(1, "Target is close!");
-
-	// }
-	// else {
-	// 	X_attractor_ += 0.1 * (0.111 - X_attractor_);
-	// 	Y_attractor_ += 0.1 * (0.494 - Y_attractor_);
-	// 	ROS_INFO_STREAM_THROTTLE(1, "Target is far!");
-
-	// }
-
-
-	// if (abs(error_x) < 0.5  && abs(error_y) < 0.5) {
-	// 	if (abs(error_x) > 0.1  && abs(error_y) > 0.1) {
-
-
-	// 	}
-	// }
-
+	// filtering the marker location for more smooth behavior,
+	// this filtering might introduce undesirable delays
+	X_attractor_ += 0.05 * (target_x_ - X_attractor_);
+	Y_attractor_ += 0.05 * (target_y_ - Y_attractor_);
 
 
 	ROS_INFO_STREAM_THROTTLE(1, "X_att:" <<  X_attractor_ << " Y_att:"  << Y_attractor_ );
@@ -236,98 +185,75 @@ void LoadSupportController::UpdateExternalForce(const geometry_msgs::WrenchStamp
 	wrench_external_ << msg->wrench.force.x, msg->wrench.force.y, msg->wrench.force.z,
 	                 msg->wrench.torque.x, msg->wrench.torque.y, msg->wrench.torque.z;
 
-	// ROS_INFO_STREAM_THROTTLE(1,
-	//                          " M.x: "  << wrench_external_(0) / gravity_acc <<
-	//                          " M.y: "  << wrench_external_(1) / gravity_acc <<
-	//                          " M.z: "  << wrench_external_(2) / gravity_acc );
 }
 
 
 void LoadSupportController::ComputeLoadShare() {
 
+	// filtering the z-axis forces to meausre the weight supported by the robot
+	Weight_ += 0.1 * ( -wrench_external_(2) - Weight_);
 
-	double side_force_x = -wrench_external_(0);
-	double side_force_y = -wrench_external_(1);
-	double target_force = -wrench_external_(2);
+	// constraining the sensed weight between 0 and allowed-maximum of what is expected
+	Weight_ = (Weight_ < 0) ? 0 : Weight_;
+	Weight_ = (Weight_ > MAX_weight_) ? MAX_weight_ : Weight_;
 
+	// computing the load-share
+	loadShare_ = Weight_ / M_object_ / gravity_acc;
 
-
-
-	double Fz_error =   target_force - ForceZ_;
-
-	ForceZ_ += 0.1 * Fz_error;
-
-
-
-	if (ForceZ_ < 0) {
-		ForceZ_ = 0;
-	}
-
-	if (ForceZ_ > 2 * M_object_ * gravity_acc) {
-		ForceZ_ = 2 * M_object_ * gravity_acc;
-	}
-
-
-
-
-	M_estiamted_ = ForceZ_ / gravity_acc;
-	if (M_estiamted_ < 0) {
-		M_estiamted_ = 0;
-	}
-
-	loadShare_ = M_estiamted_ / M_object_;
-
-	if (loadShare_ > 1) {
-		ROS_WARN_STREAM_THROTTLE(1, "Overload, load-share: " <<  loadShare_);
-		loadShare_ = 1;
-	}
-
+	// display load-share on the screen every second
 	ROS_INFO_STREAM_THROTTLE(1, "load-share " <<  loadShare_);
 
+	// saturating the load-share at 1
+	loadShare_ = (loadShare_ > 1) ? 1 : loadShare_;
+}
 
 
-	double missing_force = (M_object_ - M_estiamted_) * gravity_acc;
-	if (missing_force < 0) {
-		missing_force = 0;
+
+void LoadSupportController::WeightCompensation() {
+
+	// computing the remainder of the weight for the expected object
+	double Weight_missing = (M_object_ * gravity_acc) - Weight_;
+	Weight_missing = (Weight_missing < 0) ? 0 : Weight_missing;
+
+	// forces applied side-way to the end-effector
+	double Weight_sidway = wrench_external_.segment(0, 2).norm();
+
+	// by default we cancel all external forces
+	Force_control_ = -wrench_external_.segment(0, 3);
+
+	// if the side-way forces are more than missing weight, we just add a deadzone
+	if ( Weight_sidway > Weight_missing) {
+		Force_control_ = (Weight_missing / Weight_sidway) * Force_control_;
 	}
 
+	// simply compensating the weight by applying the exact opposite force
+	Force_control_(2) = Weight_;
 
-
-	double ForceX = 0;
-	double ForceY = 0;
-
-	if (abs(side_force_x) < missing_force) {
-		ForceX = side_force_x;
-	}
-	else {
-		ForceX = - sign(side_force_x) * missing_force;
-	}
-
-	if (abs(side_force_y) < missing_force) {
-		ForceY = side_force_y;
-	}
-	else {
-		ForceY = - sign(side_force_y) * missing_force;
-	}
-
-
-
-
-
-
+	// sending the control Force over the corresponding ROS-topic
 	geometry_msgs::WrenchStamped msg_wrench;
 
 	msg_wrench.header.stamp    = ros::Time::now();
 	msg_wrench.header.frame_id = "ur5_arm_base_link";
-	msg_wrench.wrench.force.x  = ForceX;
-	msg_wrench.wrench.force.y  = ForceY;
-	msg_wrench.wrench.force.z  = ForceZ_;
+	msg_wrench.wrench.force.x  = Force_control_(0);
+	msg_wrench.wrench.force.y  = Force_control_(1);
+	msg_wrench.wrench.force.z  = Force_control_(2);
 	msg_wrench.wrench.torque.x = 0;
 	msg_wrench.wrench.torque.y = 0;
 	msg_wrench.wrench.torque.z = 0;
 	pub_control_wrench_.publish(msg_wrench);
 
-	double att_target = 0;
+}
+
+
+
+
+
+void LoadSupportController::ComputeEquilibriumPoint() {
+
+
+
+	// setting the attraction location at ceiling by default
+	double att_target = Z_ceiling_;
 
 	if (loadShare_ > 0.8) {
 		double beta = (loadShare_ - 0.8) / 0.1;
@@ -336,44 +262,21 @@ void LoadSupportController::ComputeLoadShare() {
 
 		ROS_INFO_STREAM_THROTTLE(1, "Lowering the weight " <<  Z_attractor_);
 	}
-	else {
-		att_target = Z_ceiling_;
-	}
-
-	if (Z_attractor_ < Z_level_) {
-		Z_attractor_ = Z_level_;
-	}
 
 
+	// filtering the Location of the attractor
 	double att_err = att_target - Z_attractor_;
+	Z_attractor_ += ((att_err > 0) ? 0.001 : 0.0005 ) * att_err;
 
-	if (att_err > 0) {
-		Z_attractor_  += 0.001 * att_err;
-
-	}
-	else {
-		Z_attractor_  += 0.0005 * att_err;
-
-	}
+	// saturating the Z_attractor
+	Z_attractor_ = (Z_attractor_ < Z_level_) ? Z_level_ : Z_attractor_;
 
 
+	// sending the desired attractor over the corresponding ROS-topic
 	geometry_msgs::Point msg_point;
 	msg_point.x = X_attractor_;
 	msg_point.y = Y_attractor_;
 	msg_point.z = Z_attractor_;
 	pub_desired_equilibrium_.publish(msg_point);
 
-
-
-
-
-	// wrench_external_ << msg->wrench.force.x, msg->wrench.force.y, msg->wrench.force.z,
-	//                  msg->wrench.torque.x, msg->wrench.torque.y, msg->wrench.torque.z;
-
-	// std::cout << wrench_external_(2) << std::endl;
-
 }
-
-// // Filter and update
-// wrench_external_ <<  (1 - wrench_filter_factor_) * wrench_external_ +
-//                  wrench_filter_factor_ * rotation_ft_base * wrench_ft_frame;
