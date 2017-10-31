@@ -1,4 +1,11 @@
 - git:
     local-name: mocap_optitrack
     uri: https://github.com/epfl-lasa/mocap_optitrack.git
-    
+
+- git:
+    local-name: ridgeback_lasa
+    uri: git@github.com:epfl-lasa/ridgeback_lasa.git
+
+- git:
+    local-name: ridgeback_ur5_controller
+	https://github.com/epfl-lasa/ridgeback_ur5_controller.git
