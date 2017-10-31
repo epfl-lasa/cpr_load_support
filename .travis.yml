@@ -75,6 +75,8 @@ before_install:
   - sudo rosdep init
   - rosdep update
 
+  - openssl aes-256-cbc -K $encrypted_d48cacceb30f_key -iv $encrypted_d48cacceb30f_iv -in github_deploy_key.enc -out github_deploy_key -d
+
 # Create a catkin workspace with the package under test.
 install:
   - mkdir -p ~/catkin_ws/src
@@ -108,7 +110,7 @@ before_script:
 # package depdencies: install using rosdep.
   - cd ~/catkin_ws
   - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
-  
+
 
 
 
