@@ -145,19 +145,15 @@ void LoadSupportController::FindObject() {
 			speech_statement_ = "The object is too far.";
 			object_position_ = ee_rest_position_;
 
-		}
-		else if (dist_object_ee_ground_ < .1) {
-			speech_statement_ = "I reached the object.";
 
 			if (loadShare_ > 0.8) {
-
-				object_position_ = ee_rest_position_;
-
+				speech_statement_ = "The marker is too far. I keep the object here.";
 			}
+
 
 		}
 		else {
-			speech_statement_ = "I am tracking the marker.";
+			speech_statement_ = "I am coming to help you.";
 
 			try {
 				listener_object_.lookupTransform("ur5_arm_base_link", "object",
@@ -171,11 +167,29 @@ void LoadSupportController::FindObject() {
 			catch (tf::TransformException ex) {
 				ROS_WARN_THROTTLE(1, "Couldn't find transform between arm and the object");
 			}
+
+
+			if (loadShare_ > 0.8) {
+				speech_statement_ = "I am bringing the object for you";
+			}
+
+
+			if (dist_object_ee_ground_ < .1) {
+				speech_statement_ = "I am under the marker.";
+
+				if (loadShare_ > 0.6) {
+					speech_statement_ = "I am holding the object.";
+				}
+
+			}
+
+
+
 		}
 	}
 	catch (tf::TransformException ex) {
 		ROS_WARN_THROTTLE(1, "Couldn't find transform between ee and the object");
-		speech_statement_ = "I can not find the marker!";
+		speech_statement_ = "I can not find the object!";
 		dist_object_ee_ground_ = 1e2;
 	}
 
@@ -290,7 +304,7 @@ void LoadSupportController::ComputeEquilibriumPoint() {
 	double att_err = att_target - attractor_(2);
 
 	// attractor_(2) += ((att_err > 0) ? 0.001 : 0.0005 ) * att_err;
-	attractor_(2) += 0.01  * att_err;
+	attractor_(2) += 0.005  * att_err;
 
 	// saturating the Z_attractor
 	attractor_(2) = (attractor_(2) < Z_level_  ) ? Z_level_   : attractor_(2);
