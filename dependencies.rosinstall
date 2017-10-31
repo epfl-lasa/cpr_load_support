@@ -8,4 +8,4 @@
 
 - git:
     local-name: ridgeback_ur5_controller
-    https://github.com/epfl-lasa/ridgeback_ur5_controller.git
+    uri: https://github.com/epfl-lasa/ridgeback_ur5_controller.git
