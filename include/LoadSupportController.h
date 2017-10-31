@@ -82,18 +82,18 @@ private:
 	double Z_ceiling_;
 	// a height where the object is supposed to be brought
 	double Z_level_;
-	// current attractor of the controller, a mixture of the two above
-	double Z_attractor_;
 
-	double X_attractor_;
-	double Y_attractor_;
+	// the attractor that this control computes and send as the quilibrium for the admittance control
+	Vector3d attractor_;
 
-	double target_x_;
-	double target_y_;
+	// a configuration for arm to go to in case of losing marker
+	Vector3d ee_rest_position_;
+
+	// the position of the detected object
+	Vector3d object_position_;
 
 
 	Vector3d Force_control_;
-
 
 
 	// INPUT SIGNAL
@@ -103,6 +103,10 @@ private:
 	// OUTPUT SIGNAL
 	// control wrench (from any controller) expected to be in "????" frame
 	Vector6d wrench_control_;
+
+	// distance of the object to the end-effector only considering x and y
+	double dist_object_ee_ground_;
+
 
 
 	tf::TransformListener listener_object_;
@@ -115,12 +119,14 @@ public:
 	                      double M_object,
 	                      double Z_ceiling,
 	                      double Z_level,
+	                      double Max_Weitht_compensation,
+	                      std::vector<double> ee_rest_position,
 	                      std::string topic_wrench_external,
 	                      std::string topic_wrench_control,
 	                      std::string topic_desired_equilibrium);
 
 
-	// void Run();
+	void Run();
 
 private:
 

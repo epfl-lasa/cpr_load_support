@@ -54,15 +54,21 @@ int main(int argc, char **argv)
   }
 
 
+  double Max_weight_compensation = 15;
+  std::vector<double> ee_rest_position = {0.111, 0.494, 0.587};
+
+
   LoadSupportController load_support_controller(nh, frequency,
       M_object,
       Z_ceiling,
       Z_level,
+      Max_weight_compensation,
+      ee_rest_position,
       topic_wrench_external,
       topic_wrench_control,
       topic_desired_equilibrium);
 
-  // load_support_controller.Run();
+  load_support_controller.Run();
 
 
   return 0;
