@@ -28,9 +28,9 @@ int main(int argc, char **argv)
   double loadShare_trigger;
   double loadShare_final;
   double loadShare_contact;
-  // check for validiting of the load-share
 
 
+  // this need to be sent from the launch file
   std::vector<double> ee_rest_position = {0.111, 0.494 ,0.587};
   // std::vector<double> ee_rest_position = {0.111, 0.494, 0.75};
 
@@ -113,10 +113,7 @@ int main(int argc, char **argv)
   }
 
 
-
   // check if the values for laod-share are valid
-
-
   if (loadShare_trigger < 0 || loadShare_trigger > 1) {
     ROS_ERROR_STREAM("Loadshare-trigger should be between 0 and 1.");
     return -1;
