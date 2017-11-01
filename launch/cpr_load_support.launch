@@ -7,12 +7,31 @@
   <arg name="WRENCH_EXTERNAL_TOPIC" default="/admittance_control/transformed/external_wrench" />
   <arg name="DESIRED_EQUILIBRIUM_TOPIC" default="/admittance_control/equilibrium_desired" />
 
+  <arg name="FRAME_ARM_BASE" default="ur5_arm_base_link" />
+  <arg name="FRAME_ARM_EE" default="robotiq_force_torque_frame_id" />
+  <arg name="FRAME_OBJECT" default="object" />
+
+
+
 <!-- using the wooden block int the lab! 666, the number of the beast! -->
   <arg name="M_object" default="0.586" />
+
+  <arg name="MAX_WEIGHT" default="15" />
+
   <!-- Expected location of the object -->
   <arg name="Z_ceiling" default="0.70" />
   <!-- A location where the object should be brought down -->
   <arg name="Z_level" default="0.25" />
+
+
+  <arg name="LOADSHARE_TRIGGER" default="0.8" />
+  <arg name="LOADSHARE_FINAL" default="0.9" />
+  <arg name="LOADSHARE_CONTACT" default="0.3" />
+
+
+  <arg name="TALKING_RATE_MAX" default="2" />
+  <arg name="TALKING_RATE_MIN" default="9" />
+
 
 
   <node name="speech_node" pkg="sound_play" type="soundplay_node.py" />
@@ -22,9 +41,27 @@
   <param name="topic_wrench_external" value="$(arg WRENCH_EXTERNAL_TOPIC)"/>
   <param name="topic_wrench_control" value="$(arg WRENCH_CONTROL_TOPIC)"/>
   <param name="topic_desired_equilibrium" value="$(arg DESIRED_EQUILIBRIUM_TOPIC)"/>
+
+
+  <param name="frame_arm_base" value="$(arg FRAME_ARM_BASE)"/>
+  <param name="frame_arm_endeffector" value="$(arg FRAME_ARM_EE)"/>
+  <param name="frame_object" value="$(arg FRAME_OBJECT)"/>
+
   <param name="M_object" value="$(arg M_object)"/>
   <param name="Z_ceiling" value="$(arg Z_ceiling)"/>
   <param name="Z_level" value="$(arg Z_level)"/>
+
+  <param name="Max_weight_compensation" value="$(arg MAX_WEIGHT)"/>
+
+  <param name="loadShare_trigger" value="$(arg LOADSHARE_TRIGGER)"/>
+  <param name="loadShare_final"   value="$(arg LOADSHARE_FINAL)"/>
+  <param name="loadShare_contact" value="$(arg LOADSHARE_CONTACT)"/>
+
+  <param name="talking_rate" value="$(arg TALKING_RATE_MAX)"/>
+  <param name="talking_forced_rate" value="$(arg TALKING_RATE_MIN)"/>
+
+
+
 
 
   <node name="load_support_node"

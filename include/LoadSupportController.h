@@ -1,85 +1,79 @@
 #ifndef __LOADSUPPORTCONTROLLER__
 #define __LOADSUPPORTCONTROLLER__
 
-#include "ros/ros.h"
-// #include "geometry_msgs/Pose.h"
-// #include "geometry_msgs/Twist.h"
-// #include "geometry_msgs/TwistStamped.h"
-// #include "geometry_msgs/PointStamped.h"
-// #include "nav_msgs/Path.h"
-
-
+#include <string>
+#include <iostream>
 #include <vector>
 
+#include "ros/ros.h"
 #include "geometry_msgs/WrenchStamped.h"
 #include "geometry_msgs/Point.h"
-
-#include <tf/transform_listener.h>
-
+#include "tf/transform_listener.h"
+#include "sound_play/sound_play.h"
 
 #include "eigen3/Eigen/Core"
-#include "eigen3/Eigen/Geometry"
-#include "eigen3/Eigen/Dense"
-
-
-#include <sound_play/sound_play.h>
-
-
-// #include <mutex>
-
 using namespace Eigen;
-
 typedef Matrix<double, 3, 1> Vector3d;
-typedef Matrix<double, 7, 1> Vector7d;
 typedef Matrix<double, 6, 1> Vector6d;
-typedef Matrix<double, 6, 6> Matrix6d;
 
+// gravity acceleration
+const double GR_ACC_ = 9.80665;
 
-const double gravity_acc = 9.80665;
-
-template <typename T> int sign(T val) {
-	return (T(0) < val) - (val < T(0));
-}
 
 class LoadSupportController {
 
-
 private:
 
-	// ROS variables
+	////////////////////////////////////////////////////////////////
+	////////////// ROS variable and communications /////////////////
+	////////////////////////////////////////////////////////////////
+
+	// handle of the ROS node
 	ros::NodeHandle nh_;
+
+	// the rate of the node
 	ros::Rate loop_rate_;
-	double dt_;
 
-	sound_play::SoundClient soundclinet_;
-
+	// a subscriber to receive the external forces
 	ros::Subscriber sub_external_wrench_;
 
+	// a publisher to send control forces to admittance controller
 	ros::Publisher pub_control_wrench_;
+
+	// a publisher to send the desired equilibrium point to the admittance controller
 	ros::Publisher pub_desired_equilibrium_;
 
-	std::string speech_statement_;
-	std::string speech_statement_last_;
+	////////////////////////////////////////////////////////////////
+	////////////// Load support variables          /////////////////
+	////////////////////////////////////////////////////////////////
 
-	ros::Time time_to_be_silient_;
-	ros::Time time_to_say_something_;
-
-	double talking_rate_;
-	double talking_forced_rate_;
-
-
-	//Controller variables
+	// Expected Mass of the object (give variable)
 	double M_object_;
+
+	// the external wrench (applied to the end-effector)
+	Vector6d wrench_external_;
+
+	// applied weight to the end-effector (z-component of the external force * g)
+	double Weight_;
+
+	// Expected Mass of the object (give variable)
 	double loadShare_;
 
+	// a value of the load-share that triggers lowering down
+	double loadShare_trigger_;
 
-	double Weight_;
+	// a value of the lod-share that the obect is expected to be lowered-down
+	double loadShare_final_;
+
+	// a value for the load-share that the robot assume it has contact with the object
+	double loadShare_contact_;
 
 	// upper limit for the maximum computed weight
 	double MAX_weight_;
 
 	// a height where the object is expected to be
 	double Z_ceiling_;
+
 	// a height where the object is supposed to be brought
 	double Z_level_;
 
@@ -89,70 +83,103 @@ private:
 	// a configuration for arm to go to in case of losing marker
 	Vector3d ee_rest_position_;
 
-	// the position of the detected object
-	Vector3d object_position_;
+	// frame_id for the arm tf
+	std::string frame_arm_base_;
 
+	////////////////////////////////////////////////////////////////
+	////////////// Object tracking variables       /////////////////
+	////////////////////////////////////////////////////////////////
 
-	Vector3d Force_control_;
+	// frame id for the object
+	std::string frame_object_;
 
+	// frame id for the end-effector
+	std::string frame_arm_endeffector_;
 
-	// INPUT SIGNAL
-	// external wrench (force/torque sensor) in "????" frame
-	Vector6d wrench_external_;
-
-	// OUTPUT SIGNAL
-	// control wrench (from any controller) expected to be in "????" frame
-	Vector6d wrench_control_;
+	// a transform listener to loockup for the object in different frames
+	tf::TransformListener listener_object_;
 
 	// distance of the object to the end-effector only considering x and y
 	double dist_object_ee_ground_;
 
+	// the position of the detected object
+	Vector3d object_position_;
 
+	// control from send to the admittance controller
+	Vector3d Force_control_;
 
-	tf::TransformListener listener_object_;
+	////////////////////////////////////////////////////////////////
+	////////////// Speech variables         ////////////////////////
+	////////////////////////////////////////////////////////////////
 
+	// a sound client for robot to speak
+	sound_play::SoundClient soundclinet_;
+
+	// a refractory period for the robot to stay silent after saying something
+	double talking_rate_;
+
+	// a period that robot should at least say something
+	double talking_forced_rate_;
+
+	// the next time step that robot is allowed to speak
+	ros::Time time_to_be_silient_;
+
+	// the next time step that robot has to say something
+	ros::Time time_to_say_something_;
+
+	// the speach statement that the robot needs to say
+	std::string speech_statement_;
+
+	// the last statement spoken by the robot
+	std::string speech_statement_last_;
 
 
 public:
-	LoadSupportController(ros::NodeHandle &n,
-	                      double frequency,
-	                      double M_object,
-	                      double Z_ceiling,
-	                      double Z_level,
-	                      double Max_Weitht_compensation,
-	                      std::vector<double> ee_rest_position,
-	                      std::string topic_wrench_external,
-	                      std::string topic_wrench_control,
-	                      std::string topic_desired_equilibrium);
 
+	// constructor
+	LoadSupportController(
+	    ros::NodeHandle &n,
+	    double frequency,
+	    double M_object,
+	    double Z_ceiling,
+	    double Z_level,
+	    double Max_Weitht_compensation,
+	    double taking_rate,
+	    double talking_force_rate,
+	    double loadShare_trigger,
+	    double loadShare_final,
+	    double loadShare_contact,
+	    std::vector<double> ee_rest_position,
+	    std::string topic_wrench_external,
+	    std::string topic_wrench_control,
+	    std::string topic_desired_equilibrium,
+	    std::string frame_arm_base,
+	    std::string frame_arm_endeffector,
+	    std::string frame_object);
 
+	// running the load-support controller
 	void Run();
 
 private:
 
-	// bool InitializeDS();
-
-	// bool InitializeROS();
-
+	// receiving the external forces applied to the end-effector
 	void UpdateExternalForce(const geometry_msgs::WrenchStamped::ConstPtr& msg);
 
+	// computing the load-share based on forces and expected mass
 	void ComputeLoadShare();
 
+	// locating marker/object
 	void FindObject();
 
+	// announcing the state of the controller
 	void SayWhatIsHappining();
 
+	// compensating for the weight of the object
 	void WeightCompensation();
 
+	// computing a desired quilibrium for the admittance controller based on the load-share
 	void ComputeEquilibriumPoint();
 
-	// void ComputeDesiredVelocity();
-
-	// void PublishDesiredVelocity();
-
-	// void PublishFuturePath();
-
 };
-
 
 #endif //__LOADSUPPORTCONTROLLER__
