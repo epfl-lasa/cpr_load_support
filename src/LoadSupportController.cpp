@@ -284,7 +284,10 @@ void LoadSupportController::FindObject() {
 		// if the object is too far away, the robot just rests
 		if (dist_object_ee_ground_ > 1) {
 			speech_statement_ = "The object is too far.";
-			object_position_ = ee_rest_position_;
+
+			// going back to rest position
+			attractor_.segment(0, 2)  += 0.05  * (ee_rest_position_.segment(0, 2) - attractor_.segment(0, 2) );
+
 
 			if (loadShare_ > loadShare_contact_) {
 				speech_statement_ = "The marker is too far.";
@@ -302,6 +305,8 @@ void LoadSupportController::FindObject() {
 				object_position_ << transform.getOrigin().x(),
 				                 transform.getOrigin().y(),
 				                 transform.getOrigin().z();
+
+
 			}
 			catch (tf::TransformException ex) {
 				ROS_WARN_STREAM_THROTTLE(1, "Couldn't find transform between"
@@ -314,13 +319,23 @@ void LoadSupportController::FindObject() {
 			}
 
 			// if the robot is very close to the marker, it notifies the user
-			if (dist_object_ee_ground_ < .1) {
+			if (dist_object_ee_ground_ < .12) {
 				speech_statement_ = "Under the marker.";
 
 				// if the robot is very close to the marker AND holding the object, it notifies the user
 				if (loadShare_ > loadShare_contact_) {
-					speech_statement_ = "Supporing the object.";
+					speech_statement_ = "Holding the object.";
+
+					// trying to slowly bring the object to the rest x,y position
+					// object_position_ += 0.05 * (ee_rest_position_ - object_position_);
+
+					// update only the x and y of the attractor based on the location of the object
+					attractor_.segment(0, 2)  += 0.01  * (ee_rest_position_.segment(0, 2) - attractor_.segment(0, 2) );
 				}
+			}
+			else {
+				// update only the x and y of the attractor based on the location of the object
+				attractor_.segment(0, 2)  += 0.05  * (object_position_.segment(0, 2) - attractor_.segment(0, 2) );
 			}
 		}
 	}
@@ -331,8 +346,7 @@ void LoadSupportController::FindObject() {
 		dist_object_ee_ground_ = 1e2;
 	}
 
-	// update only the x and y of the attractor based on the location of the object
-	attractor_.segment(0, 2)  += 0.05  * (object_position_.segment(0, 2) - attractor_.segment(0, 2) );
+
 
 }
 

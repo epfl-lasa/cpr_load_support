@@ -13,8 +13,8 @@
 
 
 
-<!-- using the wooden block int the lab! 666, the number of the beast! -->
-  <arg name="M_object" default="0.586" />
+  <!-- mass of the object -->
+  <arg name="M_object" default="0.795" />
 
   <arg name="MAX_WEIGHT" default="15" />
 
@@ -29,8 +29,8 @@
   <arg name="LOADSHARE_CONTACT" default="0.3" />
 
 
-  <arg name="TALKING_RATE_MAX" default="2" />
-  <arg name="TALKING_RATE_MIN" default="9" />
+  <arg name="TALKING_RATE_MAX" default="4" />
+  <arg name="TALKING_RATE_MIN" default="12" />
 
 
 

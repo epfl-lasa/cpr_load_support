@@ -31,7 +31,8 @@ int main(int argc, char **argv)
   // check for validiting of the load-share
 
 
-  std::vector<double> ee_rest_position = {0.111, 0.494, 0.587};
+  std::vector<double> ee_rest_position = {0.111, 0.494 ,0.587};
+  // std::vector<double> ee_rest_position = {0.111, 0.494, 0.75};
 
 
 
