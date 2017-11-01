@@ -57,11 +57,11 @@ LoadSupportController::LoadSupportController(ros::NodeHandle &n,
 	dist_object_ee_ground_ = 1e2;
 
 	// a refractory period (e.g 2seconds) between each talking commands
-	talking_rate_ = 2;
+	talking_rate_ = 3;
 	// a time-duration that robot should not stay silent more than
-	talking_forced_rate_ = 10;
+	talking_forced_rate_ = 9;
 
-	// intializing some sentence for the robot
+	// intializing the sentence for the robot
 	speech_statement_ = "I have nothing to say!";
 	speech_statement_last_ = speech_statement_;
 }
@@ -111,116 +111,10 @@ void LoadSupportController::Run() {
 
 }
 
-// The robot says what is stored in "speech_statement_"
-void LoadSupportController::SayWhatIsHappining() {
 
-	// only talk if the robot has something new to say
-	// if (speech_statement_.compare(speech_statement_last_) ) {
-	speech_statement_last_ = speech_statement_;
-	soundclinet_.say(speech_statement_);
-	ROS_INFO_STREAM_THROTTLE(1, "Talking: " << speech_statement_);
-	// }
-}
-
-void LoadSupportController::FindObject() {
-
-	tf::StampedTransform transform;
-	Vector3d object_to_ee;
-
-	object_to_ee.setZero();
-
-	// first we read and check the distance of the object with respect to the end-effector of the robot
-	try {
-		listener_object_.lookupTransform("robotiq_force_torque_frame_id", "object",
-		                                 // listener_object_.lookupTransform("mocap_palm", "mocap_object",
-		                                 ros::Time(0), transform);
-
-		object_to_ee << transform.getOrigin().x(),
-		             transform.getOrigin().y(),
-		             transform.getOrigin().z();
-
-		dist_object_ee_ground_ = object_to_ee.segment(0, 2).norm();
-
-		if (dist_object_ee_ground_ > 1) {
-			speech_statement_ = "The object is too far.";
-			object_position_ = ee_rest_position_;
-
-
-			if (loadShare_ > 0.8) {
-				speech_statement_ = "The marker is too far. I keep the object here.";
-			}
-
-
-		}
-		else {
-			speech_statement_ = "I am coming to help you.";
-
-			try {
-				listener_object_.lookupTransform("ur5_arm_base_link", "object",
-				                                 ros::Time(0), transform);
-
-				object_position_ << transform.getOrigin().x(),
-				                 transform.getOrigin().y(),
-				                 transform.getOrigin().z();
-
-			}
-			catch (tf::TransformException ex) {
-				ROS_WARN_THROTTLE(1, "Couldn't find transform between arm and the object");
-			}
-
-
-			if (loadShare_ > 0.8) {
-				speech_statement_ = "I am bringing the object for you";
-			}
-
-
-			if (dist_object_ee_ground_ < .1) {
-				speech_statement_ = "I am under the marker.";
-
-				if (loadShare_ > 0.6) {
-					speech_statement_ = "I am holding the object.";
-				}
-
-			}
-
-
-
-		}
-	}
-	catch (tf::TransformException ex) {
-		ROS_WARN_THROTTLE(1, "Couldn't find transform between ee and the object");
-		speech_statement_ = "I can not find the object!";
-		dist_object_ee_ground_ = 1e2;
-	}
-
-	ROS_INFO_STREAM_THROTTLE(1, "distance to ee: " <<  dist_object_ee_ground_);
-
-
-
-	// double dt = loop_rate_.expectedCycleTime().toSec();
-
-	// attractor_ += pow(0.95,1/dt)  * (object_position_ - attractor_);
-	// ROS_INFO_STREAM_THROTTLE(1, "dt :" <<  loop_rate_.expectedCycleTime().toSec());
-
-	// update only the x and y of the attractor based on the location of the object
-	attractor_.segment(0, 2)  += 0.05  * (object_position_.segment(0, 2) - attractor_.segment(0, 2) );
-
-
-
-	// ROS_INFO_STREAM_THROTTLE(1, "X_att:" <<  attractor_ );
-
-}
-
-
-
-void LoadSupportController::UpdateExternalForce(const geometry_msgs::WrenchStamped::ConstPtr& msg) {
-
-	wrench_external_ << msg->wrench.force.x, msg->wrench.force.y, msg->wrench.force.z,
-	                 msg->wrench.torque.x, msg->wrench.torque.y, msg->wrench.torque.z;
-
-}
-
-
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////// Here we comput how of the object is held by the robot ////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 void LoadSupportController::ComputeLoadShare() {
 
 	// filtering the z-axis forces to meausre the weight supported by the robot
@@ -245,7 +139,11 @@ void LoadSupportController::ComputeLoadShare() {
 }
 
 
-
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////// Here, we compensate for the weight of the object and  ////////////////
+//////////////////// add a deadzone for the sideway forces in order to not ////////////////
+//////////////////// to react to forces created by a tilted object         ////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 void LoadSupportController::WeightCompensation() {
 
 	// computing the remainder of the weight for the expected object
@@ -281,13 +179,12 @@ void LoadSupportController::WeightCompensation() {
 
 }
 
-
-
-
-
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////// based on the load that the robot is holding, it       ////////////////
+//////////////////// computes a new equilibrium point for the admittance   ////////////////
+//////////////////// control in order to bring dwon the object.             ////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 void LoadSupportController::ComputeEquilibriumPoint() {
-
-
 
 	// starting by the rest hieght of the arm
 	double att_target = (dist_object_ee_ground_ > 0.2) ? ee_rest_position_(2) : Z_ceiling_;
@@ -298,7 +195,6 @@ void LoadSupportController::ComputeEquilibriumPoint() {
 		att_target = (1 - beta) * Z_ceiling_ + beta * Z_level_;
 		ROS_INFO_STREAM_THROTTLE(1, "Lowering the weight " <<  att_target);
 	}
-
 
 	// filtering the Location of the attractor
 	double att_err = att_target - attractor_(2);
@@ -318,3 +214,111 @@ void LoadSupportController::ComputeEquilibriumPoint() {
 	pub_desired_equilibrium_.publish(msg_point);
 
 }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////// Here, the robot say the 'speach_statement_' //////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+void LoadSupportController::SayWhatIsHappining() {
+
+	// only talk if the robot has something new to say
+	// if (speech_statement_.compare(speech_statement_last_) ) {
+	speech_statement_last_ = speech_statement_;
+	soundclinet_.say(speech_statement_);
+	ROS_INFO_STREAM_THROTTLE(1, "Talking: " << speech_statement_);
+	// }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////// In this function, the robot look for the marker //////////////////////
+//////////////////// and based on the distance of the object to its  //////////////////////
+//////////////////// end-effector and the value of the load-share    //////////////////////
+//////////////////// it decides to either follow the marker or stay  //////////////////////
+//////////////////// put.                                            //////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+void LoadSupportController::FindObject() {
+
+	tf::StampedTransform transform;
+	Vector3d object_to_ee;
+
+	object_to_ee.setZero();
+
+	// first we read and check the distance of the object with respect to the end-effector of the robot
+	try {
+		listener_object_.lookupTransform("robotiq_force_torque_frame_id", "object",
+		                                 // listener_object_.lookupTransform("mocap_palm", "mocap_object",
+		                                 ros::Time(0), transform);
+
+		object_to_ee << transform.getOrigin().x(),
+		             transform.getOrigin().y(),
+		             transform.getOrigin().z();
+
+		dist_object_ee_ground_ = object_to_ee.segment(0, 2).norm();
+
+		if (dist_object_ee_ground_ > 1) {
+			speech_statement_ = "The object is too far.";
+			object_position_ = ee_rest_position_;
+
+			if (loadShare_ > 0.8) {
+				speech_statement_ = "The marker is too far.";
+			}
+		}
+		else {
+			speech_statement_ = "Coming to help.";
+
+			try {
+				listener_object_.lookupTransform("ur5_arm_base_link", "object",
+				                                 ros::Time(0), transform);
+
+				object_position_ << transform.getOrigin().x(),
+				                 transform.getOrigin().y(),
+				                 transform.getOrigin().z();
+
+			}
+			catch (tf::TransformException ex) {
+				ROS_WARN_THROTTLE(1, "Couldn't find transform between arm and the object");
+			}
+
+			if (loadShare_ > 0.8) {
+				speech_statement_ = "Bringing the object";
+			}
+			if (dist_object_ee_ground_ < .1) {
+				speech_statement_ = "Under the marker.";
+
+				if (loadShare_ > 0.6) {
+					speech_statement_ = "Holding the object.";
+				}
+
+			}
+		}
+	}
+	catch (tf::TransformException ex) {
+		ROS_WARN_THROTTLE(1, "Couldn't find transform between ee and the object");
+		speech_statement_ = "I can not find the marker!";
+		dist_object_ee_ground_ = 1e2;
+	}
+
+	// ROS_INFO_STREAM_THROTTLE(1, "distance to ee: " <<  dist_object_ee_ground_);
+	// double dt = loop_rate_.expectedCycleTime().toSec();
+
+	// attractor_ += pow(0.95,1/dt)  * (object_position_ - attractor_);
+	// ROS_INFO_STREAM_THROTTLE(1, "dt :" <<  loop_rate_.expectedCycleTime().toSec());
+
+	// update only the x and y of the attractor based on the location of the object
+	attractor_.segment(0, 2)  += 0.05  * (object_position_.segment(0, 2) - attractor_.segment(0, 2) );
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////// A callback to receive the external forces   //////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+void LoadSupportController::UpdateExternalForce(const geometry_msgs::WrenchStamped::ConstPtr& msg) {
+
+	wrench_external_ << msg->wrench.force.x, msg->wrench.force.y, msg->wrench.force.z,
+	                 msg->wrench.torque.x, msg->wrench.torque.y, msg->wrench.torque.z;
+
+}
+
+
+
+
