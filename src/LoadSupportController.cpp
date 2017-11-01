@@ -35,7 +35,8 @@ LoadSupportController::LoadSupportController(
 	frame_arm_endeffector_(frame_arm_endeffector),
 	frame_object_(frame_object) {
 
-	ROS_INFO_STREAM("Load-Support-Controller is created at: " << nh_.getNamespace() << " with freq: " << frequency << "Hz");
+	ROS_INFO_STREAM("Load-Support-Controller is created at: "
+	                << nh_.getNamespace() << " with freq: " << frequency << "Hz");
 
 	// a subscriber to get read the external forces
 	sub_external_wrench_ = nh_.subscribe(topic_wrench_external, 5,
@@ -131,7 +132,7 @@ void LoadSupportController::ComputeLoadShare() {
 	// Streaming the measured weight
 	ROS_INFO_STREAM_THROTTLE(1, "weight:  " <<  Weight_);
 
-	// weight lower than zero are set to 0
+	// weights lower than zero are set to 0
 	Weight_ = (Weight_ < 0) ? 0 : Weight_;
 
 	// weight higher than Maximum weight are trimmed
@@ -242,7 +243,8 @@ void LoadSupportController::SayWhatIsHappining() {
 
 	// the robot only talks if a refractory period has passed (i.e., talking_rate_)
 	if ( (ros::Time::now() - time_to_be_silient_).toSec() > 0  ) {
-		if (speech_statement_.compare(speech_statement_last_) || (ros::Time::now() - time_to_say_something_).toSec() > 0) {
+		if (speech_statement_.compare(speech_statement_last_) ||
+		        (ros::Time::now() - time_to_say_something_).toSec() > 0) {
 
 			speech_statement_last_ = speech_statement_;
 			soundclinet_.say(speech_statement_);
