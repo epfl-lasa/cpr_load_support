@@ -101,9 +101,6 @@ before_script:
   - if [[ -f $ROSINSTALL_FILE ]] ; then wstool merge $ROSINSTALL_FILE ; fi
   - wstool up
 
-# dependencies not yet in rosdep 
-#  - sudo apt-get install ros-indigo-ridgeback-*
-#  - sudo apt-get install ros-indigo-universal-robot
   
 # package depdencies: install using rosdep.
   - cd ~/catkin_ws
