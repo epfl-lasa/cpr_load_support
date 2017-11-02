@@ -32,11 +32,11 @@ To compute the desired equilibrium in xy-plane, the robot considers the location
 * If the marker is in reach, the robot set the x-y of the equilibrium as the x-y of the object (filtered and limited by the workspace).
     - if the load-share is low, the robot tracks the marker in order to receive the object.
     - if the load-share is high, the robot follows the marker in order to carry the object for the human-user.
-* If the maker is very close the end-effector of the robot and the load-share is high enough, the robot tries to slowly bring the object to its resting equilibrium point.
+* If the maker is very close the end-effector of the robot and the load-share is high enough, the robot tries to slowly bring the object to its resting equilibrium point. 
 
 
 ### Sound play
-The states computed above are played as sound using [ros-sound-play](http://wiki.ros.org/sound_play).
+The states computed above are played as sound using [ros-sound-play](http://wiki.ros.org/sound_play). The robot also take two values for the timing of the speaking. "TALKING_RATE_MAX" (in seconds) forces the robot to pause between statements. Moreover, the robot only talks when there is new statement. On the other hand, "TALKING_RATE_MIN" (in seconds) forces the robot not stay silent more than this value (even the statement is repetitive).
 
 
 ### Weight compensation
@@ -57,10 +57,10 @@ The robot also cancels a portion of side-way forces. This portion is equal to un
 | FRAME_ARM_EE             | The frame id for the end-effector of the arm     |
 | FRAME_OBJECT             | The frame id for the object   |
 | M_object             | The mass of the object to be transferred  |
-| MAX_WEIGHT             | The maximum weight that is compenstated  |
+| MAX_WEIGHT             | The maximum weight that is compensated    |
 | Z_ceiling             | The height where the object is expected to be received   |
 | Z_level             | The height where the object is expected to be brought down  |
-| LOADSHARE_TRIGGER             | the load-share that triggers the robot to bring the object down   |
+| LOADSHARE_TRIGGER             | The load-share that triggers the robot to bring the object down   |
 | LOADSHARE_FINAL             | The required load-share to reach lowest height  |
 | LOADSHARE_CONTACT             | The load-share that the robot assume it has contact with the object   |
 | TALKING_RATE_MAX             | The maximum speaking rate (in seconds)  |
