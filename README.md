@@ -12,7 +12,7 @@ The demonstration of supporting behavior of this controller can be viewd here:
 
 
 The demonstration of the controller and all other components can be viewed here:
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/AB7B2HuQdQ0/0.jpg)](https://youtu.be/AB7B2HuQdQ0)
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ya-0q79Wokc/0.jpg)](https://youtu.be/ya-0q79Wokc)
 
 
 
