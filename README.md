@@ -7,7 +7,7 @@ This repository provides a controller for a robotic arm to receive a heavy load 
 While generic in its approach, this specific implementation is done for clearpath mobile-robot with UR5 robotic-arm. The only requirement (for other robots) is to have an impedance controller implemented. For our case at LASA, we are using our implementation at [ridgeback_ur5_controllers](https://github.com/epfl-lasa/ridgeback_ur5_controller/tree/devel).
 
 
-
+---
 ## The control architecture
 
 The architecture of the load-support architecture (which is implemented in [LoadSupportController.cpp](https://github.com/epfl-lasa/cpr_load_support/blob/master/src/LoadSupportController.cpp)) is depicted below.
