@@ -18,7 +18,7 @@ The architecture of the load-support controller (which is implemented in [LoadSu
 As you can see, the input signal to this code is the external force (F<sub>ext</sub>) and vision system information (published on ROS as transformation). The code outputs a desired equilibrium point and a control wrench to the admittance controller of the robot. The setting of these communication can be found in [the launch file](https://github.com/epfl-lasa/cpr_load_support/blob/master/launch/cpr_load_support.launch).
 
 ### Load-share computation
-Based on the external forces on the z-axis (F<sub>ext,z</sub>) and the given mass for the object(M), the robot computes the load-share (noted as alpha). 
+Based on the external forces on the z-axis (F<sub>ext,z</sub>) and the given mass for the object (M), the robot computes the load-share (noted as alpha). 
 
 ### Equilibrium computation
 Based on the load-share and the location of the marker (which might be detached from the object), the robot adapts its equilibrium point. The computation of the equilibrium point is done separately for z-xis and the x-y-plane. In the z-axis, the robot computes the equilibrium point using the following function (noted as g).
@@ -36,7 +36,7 @@ To compute the desired equilibrium in xy-plane, the robot considers the location
 
 
 ### Sound play
-The states computed above are play as sound using [ros-sound-play](http://wiki.ros.org/sound_play).
+The states computed above are played as sound using [ros-sound-play](http://wiki.ros.org/sound_play).
 
 
 ### Weight compensation
@@ -45,7 +45,26 @@ In the Z-axis the robot cancel the effect of weight on the admittance control by
 The robot also cancels a portion of side-way forces. This portion is equal to untransformed weight. Thus, this function (noted as D) can be seen as a adaptive-dead-zone. The rationale behind this dead-zone is compensate for side-way forces that are actually created by the object that is tilted. Once the robot is supporting the whole weight, the compliant behavior is back to the one exhibited by the admittance controller.
 
 
+### Summary of variables
 
+
+| Variable      | Parameter                         |
+|---------------|-----------------------------------|
+| WRENCH_EXTERNAL_TOPIC    | The topic to receive the external force from          |
+| WRENCH_CONTROL_TOPIC     | The topic to send control wrench to admittance controller       |
+| DESIRED_EQUILIBRIUM_TOPIC| The topic to send the desired equilibrium point to the admittance controller   |
+| FRAME_ARM_BASE           | The frame id for the base of the arm |
+| FRAME_ARM_EE             | The frame id for the end-effector of the arm     |
+| FRAME_OBJECT             | The frame id for the object   |
+| M_object             | The mass of the object to be transferred  |
+| MAX_WEIGHT             | The maximum weight that is compenstated  |
+| Z_ceiling             | The height where the object is expected to be received   |
+| Z_level             | The height where the object is expected to be brought down  |
+| LOADSHARE_TRIGGER             | the load-share that triggers the robot to bring the object down   |
+| LOADSHARE_FINAL             | The required load-share to reach lowest height  |
+| LOADSHARE_CONTACT             | The load-share that the robot assume it has contact with the object   |
+| TALKING_RATE_MAX             | The maximum speaking rate (in seconds)  |
+| LOADSHARE_CONTACT             | The minimum speaking rate (in seconds)   |
 
 
 
