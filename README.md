@@ -43,8 +43,8 @@ This means, if the robot receives loads more than a certaion amount (alpha<sub>t
 To compute the desired equilibrium in xy-plane, the robot considers the location of the object and load-share as follows. 
 * If the maker is far, the robot ignore it and goes back to its resting equilibrium (whether it has the object or not).
 * If the marker is in reach, the robot set the x-y of the equlibirum as the x-y of the object (filter and limited by the workspace).
-+ if the load-share is low, the robot tracks the marker in order to receive the object.
-+ if the load-share is high, the robot follows the marker in order to carry the object for the human-user.
+- if the load-share is low, the robot tracks the marker in order to receive the object.
+- if the load-share is high, the robot follows the marker in order to carry the object for the human-user.
 * If the maker is very close the end-effector of the robot and the load-share is high enough, the robot tries to slowly bring the object to its resting equlibrium point.
 
 
