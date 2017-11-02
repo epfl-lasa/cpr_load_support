@@ -10,7 +10,7 @@ While generic in its approach, this specific implementation is done for clearpat
 
 ## The control architecture
 
-The architecture of the load-support architecture (which is implemented [here](https://github.com/epfl-lasa/cpr_load_support/blob/master/src/LoadSupportController.cpp)) is depicted below.
+The architecture of the load-support architecture (which is implemented [LoadSupportController.cpp](https://github.com/epfl-lasa/cpr_load_support/blob/master/src/LoadSupportController.cpp)) is depicted below.
 
 ![alt text](doc/load_support_algorithm.png "the code architecture.")
 
