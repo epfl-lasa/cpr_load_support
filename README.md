@@ -60,7 +60,7 @@ The robot also cancels a portion of side-way forces. This portion is equal to un
 Clone the repository into your catkin source directory
 ```bash
 $ cd ~/catkin_ws/src
-$ git clone git@github.com:epfl-lasa/ridgeback_ur5_controller.git
+$ git clone git@github.com:epfl-lasa/cpr_load_support.git
 ```
 
 Get the package dependencies using rosdep
