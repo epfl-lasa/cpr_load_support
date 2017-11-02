@@ -8,19 +8,6 @@ While generic in its approach, this specific impelementation is done for clearpa
 
 
 
-checklist:
-
-- how to compile and run
-
-
-- add a figure for the control structure
-
-
-- name of topics and variable
-
-- pictures and videos
-
-
 ## The control architecture
 
 The architecture of the load-support architecture (which is impelemented [here](https://github.com/epfl-lasa/cpr_load_support/blob/master/src/LoadSupportController.cpp)) is depicted below.
@@ -42,10 +29,20 @@ This means, if the robot receives loads more than a certaion amount (alpha<sub>t
 
 To compute the desired equilibrium in xy-plane, the robot considers the location of the object and load-share as follows. 
 * If the maker is far, the robot ignore it and goes back to its resting equilibrium (whether it has the object or not).
-* If the marker is in reach, the robot set the x-y of the equlibirum as the x-y of the object (filter and limited by the workspace).
+* If the marker is in reach, the robot set the x-y of the equlibirum as the x-y of the object (filtered and limited by the workspace).
     - if the load-share is low, the robot tracks the marker in order to receive the object.
     - if the load-share is high, the robot follows the marker in order to carry the object for the human-user.
 * If the maker is very close the end-effector of the robot and the load-share is high enough, the robot tries to slowly bring the object to its resting equlibrium point.
+
+
+### Sound play
+The states computed above are play as sound using [ros-sound-play](http://wiki.ros.org/sound_play).
+
+
+### Weight compensation
+In the Z-axis the robot cancel the effect of weight on the admittance control by sending its negated values as control wrench. However, this value cannot be exceed from F<sub>max</sub> than can be set from  [the launch file](https://github.com/epfl-lasa/cpr_load_support/blob/master/launch/cpr_load_support.launch).
+
+The robot also cancels a portion of side-way forces. This portion is equal to untransferred weight. Thus, this function (noted as D) can be seen as a adaptive-dead-zone. The raionale behind this dead-zone is componsate for side-way forces that are actually created by the object that is tilted. Once the robot is supporting the whole weight, the compliant behavior is back to the one exhibited by the admittance controller.
 
 
 
