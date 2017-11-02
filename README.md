@@ -8,6 +8,43 @@ While generic in its approach, this specific impelementation is done for clearpa
 
 
 
+checklist:
+
+- how to compile and run
+
+
+- add a figure for the control structure
+
+
+- name of topics and variable
+
+- pictures and videos
+
+
+## The control architecture
+
+The architecture of the load-support architecture (which is impelemented [here](https://github.com/epfl-lasa/cpr_load_support/blob/master/src/LoadSupportController.cpp)) is depicted below.
+
+![alt text](doc/load_support_algorithm.png "the code architecture.")
+
+
+As you can see, the input signal to this code is the external force (F<sub>ext</sub>) and vision system information (published on ROS as transformation). The code outputs a desired equilibrium poin and a control wrench to the admittnace controller of the robot. The setting of these communication can be found in [the launch file](https://github.com/epfl-lasa/cpr_load_support/blob/master/launch/cpr_load_support.launch).
+
+
+Based on the external forces on the z-axis (F<sub>ext,z</sub>) and the given mass for the object(M), the robot computes the load-share (noted as alpha). 
+
+Based on the load-share and the location of the marker (which might be deteched from the object), the robot adapts its equilibrium point. The computation of the equilibrium point is done separately for z-xis and the x-y-plane. In the z-axis, the robot computes the equilibrium point using the follwoing function (noted as g).
+![alt text](doc/load_support_graph.png "State-dependency of the equlibrium w.r.t. the load-share")
+This means, if the robot receives loads more than a certaion amount (alpha<sub>trigger</sub>) it will bring it down. Also, the robot holds the object at lower-level for load-share higher than (alpha<sub>final</sub>). In this graph, (Z<sub>ceiling</sub>) is the expected height to recieve the object and (Z<sub>level</sub>) is the final expected height.
+
+
+
+
+
+
+
+
+
 ---
 
 ## Compliation and build
@@ -59,25 +96,3 @@ Finally, run the load-support controller
 ```bash
 $ roslaunch cpr_load_support cpr_load_support.launch
 ```
-
-
-
-
-
-checklist:
-
-- how to compile and run
-
-
-- add a figure for the control structure
-
-
-- name of topics and variable
-
-- pictures and videos
-
-
-![alt text](doc/load_support_graph.png "State-dependency of the equlibrium w.r.t. the load-share")
-
-![alt text](doc/load_support_algorithm.png "the code architecture.")
-
